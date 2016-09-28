@@ -33,7 +33,7 @@ class FBOHelper {
 
 			if ( intersects.length > 0 ) {
 
-				this.readPixel( intersects[ 0 ].object, intersects[ 0 ].uv.x, intersects[ 0 ].uv.y );
+				this.readPixel( this.fboMap.get( intersects[ 0 ].object ), intersects[ 0 ].uv.x, intersects[ 0 ].uv.y );
 				this.label.style.display = 'block';
 
 			} else {
@@ -63,9 +63,11 @@ class FBOHelper {
 		this.currentU = 0;
 		this.currentV = 0;
 
+		this.fboMap = new Map();
+
 	}
 
-	attach( fbo, name ) {
+	attach( fbo, name, formatter ) {
 
 		var li = document.createElement( 'li' );
 		li.setAttribute( 'style', 'cursor: pointer;color: white; width: 100%; padding: 4px 0; border-top: 1px solid #888; border-bottom: 1px solid black; background-color: #444; text-align: center; text-shadow: 0 -1px black' );
@@ -78,19 +80,21 @@ class FBOHelper {
 		const material = new THREE.MeshBasicMaterial( { map: fbo } );
 		const quad = new THREE.Mesh( new THREE.PlaneBufferGeometry( width, height ), material );
 		quad.visible = false;
-		quad.fbo = fbo;
 		quad.width = width;
 		quad.height = height;
 		this.scene.add( quad );
 
-		this.fbos.push( {
+		var fboData = {
 			name: name,
 			fbo: fbo,
 			li: li,
 			visible: false,
 			quad: quad,
-			material: material
-		} );
+			material: material,
+			formatter: formatter
+		};
+		this.fbos.push( fboData );
+		this.fboMap.set( quad, fboData );
 
 		li.addEventListener( 'click', e => {
 			quad.visible = !quad.visible;
@@ -160,14 +164,16 @@ class FBOHelper {
 
 		const pixelBuffer = new Float32Array( 4 );
 		renderer.readRenderTargetPixels( fbo, x, y, 1, 1, pixelBuffer );
-		this.label.innerHTML = `X : ${x} Y: ${y}<br/>R: ${pixelBuffer[ 0 ]} G: ${pixelBuffer[ 1 ]} B: ${pixelBuffer[ 2 ]} A: ${pixelBuffer[ 3 ]}`;
+		const posTxt = `X : ${x} Y: ${y}`;
+		const dataTxt = obj.formatter ? obj.formatter( pixelBuffer ) : `R: ${pixelBuffer[ 0 ]} G: ${pixelBuffer[ 1 ]} B: ${pixelBuffer[ 2 ]} A: ${pixelBuffer[ 3 ]}`;
+		this.label.innerHTML = `${posTxt}<br/>${dataTxt}`;
 
-		const ox = ~~( u * fbo.width ) * obj.width / fbo.width;
-		const oy = ~~( ( 1 - v ) * fbo.height ) * obj.height / fbo.height;
-		this.hotspot.style.width = `${obj.width / fbo.width}px`;
-		this.hotspot.style.height = `${obj.height / fbo.height}px`;
+		const ox = ~~( u * fbo.width ) * obj.quad.width / fbo.width;
+		const oy = ~~( ( 1 - v ) * fbo.height ) * obj.quad.height / fbo.height;
+		this.hotspot.style.width = `${obj.quad.width / fbo.width}px`;
+		this.hotspot.style.height = `${obj.quad.height / fbo.height}px`;
 		this.hotspot.style.transform = `translate3d(${ox}px,${oy}px,0)`;
-		this.label.style.bottom = ( obj.height / fbo.height ) + 'px';
+		this.label.style.bottom = ( obj.quad.height / fbo.height ) + 'px';
 
 	}
 
