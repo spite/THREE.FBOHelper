@@ -28,7 +28,13 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 			document.body.appendChild(this.layer);
 
 			this.layer.addEventListener('wheel', function (e) {
-				console.log(e);
+
+				_this.camera.zoom -= e.deltaY / 100;
+				_this.camera.updateProjectionMatrix();
+				_this.grid.style.transform = 'translate3d(-50%, -50%, 0 ) scale(' + _this.camera.zoom + ',' + _this.camera.zoom + ')';
+				_this.label.style.transform = 'scale(' + 1 / _this.camera.zoom + ',' + 1 / _this.camera.zoom + ')';
+				_this.hotspot.style.transform = 'scale(' + 1 / _this.camera.zoom + ',' + 1 / _this.camera.zoom + ')';
+				_this.hotspot.style.borderWidth = 1 / _this.camera.zoom + 'px';
 			});
 
 			this.layer.addEventListener('mousemove', function (e) {

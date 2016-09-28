@@ -20,7 +20,14 @@ class FBOHelper {
 		document.body.appendChild( this.layer );
 
 		this.layer.addEventListener( 'wheel', e => {
-			console.log( e );
+
+			this.camera.zoom -= e.deltaY / 100;
+			this.camera.updateProjectionMatrix();
+			this.grid.style.transform = `translate3d(-50%, -50%, 0 ) scale(${this.camera.zoom},${this.camera.zoom})`;
+			this.label.style.transform = `scale(${1/this.camera.zoom},${1/this.camera.zoom})`;
+			this.hotspot.style.transform = `scale(${1/this.camera.zoom},${1/this.camera.zoom})`;
+			this.hotspot.style.borderWidth = `${1/this.camera.zoom}px`;
+
 		} );
 
 		this.layer.addEventListener( 'mousemove', e => {
