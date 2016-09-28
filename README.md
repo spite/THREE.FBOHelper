@@ -7,7 +7,7 @@ FrameBuffer Object inspector for three.js
 
 # How to use
 
-- Include THREE.FBOHelper.js
+- Include THREE.FBOHelper.js. There's an ES6 build and an ES5 build transpiled with babel-cli in /build.
 - Create a helper linked to a WebGLRenderer
 ```
 var helper = new THREE.FBOHelper( renderer );
