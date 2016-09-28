@@ -41,7 +41,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 				if (intersects.length > 0) {
 
-					_this.readPixel(intersects[0].object, intersects[0].uv.x, intersects[0].uv.y);
+					_this.readPixel(_this.fboMap.get(intersects[0].object), intersects[0].uv.x, intersects[0].uv.y);
 					_this.label.style.display = 'block';
 				} else {
 
@@ -67,11 +67,13 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 			this.currentObj = null;
 			this.currentU = 0;
 			this.currentV = 0;
+
+			this.fboMap = new Map();
 		}
 
 		_createClass(FBOHelper, [{
 			key: 'attach',
-			value: function attach(fbo, name) {
+			value: function attach(fbo, name, formatter) {
 				var _this2 = this;
 
 				var li = document.createElement('li');
@@ -85,19 +87,21 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 				var material = new THREE.MeshBasicMaterial({ map: fbo });
 				var quad = new THREE.Mesh(new THREE.PlaneBufferGeometry(width, height), material);
 				quad.visible = false;
-				quad.fbo = fbo;
 				quad.width = width;
 				quad.height = height;
 				this.scene.add(quad);
 
-				this.fbos.push({
+				var fboData = {
 					name: name,
 					fbo: fbo,
 					li: li,
 					visible: false,
 					quad: quad,
-					material: material
-				});
+					material: material,
+					formatter: formatter
+				};
+				this.fbos.push(fboData);
+				this.fboMap.set(quad, fboData);
 
 				li.addEventListener('click', function (e) {
 					quad.visible = !quad.visible;
@@ -187,14 +191,16 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 				var pixelBuffer = new Float32Array(4);
 				renderer.readRenderTargetPixels(fbo, x, y, 1, 1, pixelBuffer);
-				this.label.innerHTML = 'X : ' + x + ' Y: ' + y + '<br/>R: ' + pixelBuffer[0] + ' G: ' + pixelBuffer[1] + ' B: ' + pixelBuffer[2] + ' A: ' + pixelBuffer[3];
+				var posTxt = 'X : ' + x + ' Y: ' + y;
+				var dataTxt = obj.formatter ? obj.formatter(pixelBuffer) : 'R: ' + pixelBuffer[0] + ' G: ' + pixelBuffer[1] + ' B: ' + pixelBuffer[2] + ' A: ' + pixelBuffer[3];
+				this.label.innerHTML = posTxt + '<br/>' + dataTxt;
 
-				var ox = ~~(u * fbo.width) * obj.width / fbo.width;
-				var oy = ~~((1 - v) * fbo.height) * obj.height / fbo.height;
-				this.hotspot.style.width = obj.width / fbo.width + 'px';
-				this.hotspot.style.height = obj.height / fbo.height + 'px';
+				var ox = ~~(u * fbo.width) * obj.quad.width / fbo.width;
+				var oy = ~~((1 - v) * fbo.height) * obj.quad.height / fbo.height;
+				this.hotspot.style.width = obj.quad.width / fbo.width + 'px';
+				this.hotspot.style.height = obj.quad.height / fbo.height + 'px';
 				this.hotspot.style.transform = 'translate3d(' + ox + 'px,' + oy + 'px,0)';
-				this.label.style.bottom = obj.height / fbo.height + 'px';
+				this.label.style.bottom = obj.quad.height / fbo.height + 'px';
 			}
 		}, {
 			key: 'update',
