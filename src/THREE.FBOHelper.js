@@ -20,7 +20,7 @@ class FBOHelper {
 		document.body.appendChild( this.layer );
 
 		this.layer.addEventListener( 'wheel', e => {
-			console.log( e );
+			this.camera.zoom += e;
 		} );
 
 		this.layer.addEventListener( 'mousemove', e => {
