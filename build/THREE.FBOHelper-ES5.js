@@ -17,6 +17,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 			_classCallCheck(this, FBOHelper);
 
 			this.renderer = renderer;
+			this.autoUpdate = false;
 			this.fbos = [];
 			this.list = document.createElement('ul');
 			this.list.setAttribute('style', 'all: initial; position: fixed; left: 0; top: 0; z-index: 1000000; width: 150px');
@@ -49,6 +50,9 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 			this.fboMap = new Map();
 
+			this.offsetX = 0;
+			this.offsetY = 0;
+
 			this.layer.onload = function () {
 
 				_this.layer.contentWindow.document.body.appendChild(_this.grid);
@@ -74,33 +78,61 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 				_this.layer.contentWindow.addEventListener('wheel', function (e) {
 
-					if (!e) e = event;
-					var direction = e.detail < 0 || e.wheelDelta > 0 ? 1 : -1;
+					var direction = e.deltaY < 0 ? 1 : -1;
 
 					_this.camera.zoom += direction / 50;
 					_this.camera.updateProjectionMatrix();
-					_this.grid.style.transform = 'translate3d(-50%, -50%, 0 ) scale(' + _this.camera.zoom + ',' + _this.camera.zoom + ')';
+					_this.grid.style.transform = 'translate3d(-50%, -50%, 0 ) scale(' + _this.camera.zoom + ',' + _this.camera.zoom + ') translate3d(' + _this.offsetX + 'px,' + _this.offsetY + 'px,0) ';
 					_this.label.style.transform = 'scale(' + 1 / _this.camera.zoom + ',' + 1 / _this.camera.zoom + ')';
 					_this.hotspot.style.transform = 'scale(' + 1 / _this.camera.zoom + ',' + 1 / _this.camera.zoom + ')';
 					_this.hotspot.style.borderWidth = 1 / _this.camera.zoom + 'px';
 					_this.readPixel(_this.currentObj, _this.currentU, _this.currentV);
 				});
 
+				var dragging = false;
+				var mouseStart = { x: 0, y: 0 };
+				var offsetStart = { x: 0, y: 0 };
+
+				_this.layer.contentWindow.addEventListener('mousedown', function (e) {
+
+					dragging = true;
+					mouseStart.x = e.clientX;
+					mouseStart.y = e.clientY;
+					offsetStart.x = _this.offsetX;
+					offsetStart.y = _this.offsetY;
+				});
+
+				_this.layer.contentWindow.addEventListener('mouseup', function (e) {
+
+					dragging = false;
+				});
+
 				_this.layer.contentWindow.addEventListener('mousemove', function (e) {
 
-					_this.mouse.x = e.clientX / _this.layer.clientWidth * 2 - 1;
-					_this.mouse.y = -(e.clientY / _this.layer.clientHeight) * 2 + 1;
-					_this.raycaster.setFromCamera(_this.mouse, _this.camera);
+					if (dragging) {
 
-					var intersects = _this.raycaster.intersectObject(_this.currentObj.quad, true);
+						_this.offsetX = offsetStart.x + (e.clientX - mouseStart.x) / _this.camera.zoom;
+						_this.offsetY = offsetStart.y + (e.clientY - mouseStart.y) / _this.camera.zoom;
+						_this.camera.position.x = -_this.offsetX;
+						_this.camera.position.y = _this.offsetY;
 
-					if (intersects.length > 0) {
-
-						_this.readPixel(_this.fboMap.get(intersects[0].object), intersects[0].uv.x, intersects[0].uv.y);
-						_this.label.style.display = 'block';
+						_this.grid.style.transform = 'translate3d(-50%, -50%, 0 ) scale(' + _this.camera.zoom + ',' + _this.camera.zoom + ') translate3d(' + _this.offsetX + 'px,' + _this.offsetY + 'px,0)';
 					} else {
 
-						_this.label.style.display = 'none';
+						_this.mouse.x = e.clientX / _this.layer.clientWidth * 2 - 1;
+						_this.mouse.y = -(e.clientY / _this.layer.clientHeight) * 2 + 1;
+						_this.raycaster.setFromCamera(_this.mouse, _this.camera);
+
+						var intersects = _this.raycaster.intersectObject(_this.currentObj.quad, true);
+
+						if (intersects.length > 0) {
+
+							_this.readPixel(_this.fboMap.get(intersects[0].object), intersects[0].uv.x, intersects[0].uv.y);
+							_this.label.style.display = 'block';
+						} else {
+
+							_this.label.style.display = 'none';
+						}
 					}
 				});
 
@@ -267,7 +299,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 				this.renderer.autoClear = false;
 				this.renderer.render(this.scene, this.camera);
 				this.renderer.autoClear = true;
-				//this.readPixel( this.currentObj, this.currentU, this.currentV );
+				if (this.autoUpdate) this.readPixel(this.currentObj, this.currentU, this.currentV);
 			}
 		}]);
 
