@@ -24,7 +24,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 			document.body.appendChild(this.list);
 
 			this.scene = new THREE.Scene();
-			this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, -1000, 1000);
+			this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, .000001, 1000);
 
 			this.layer = document.createElement('iframe');
 			this.layer.setAttribute('style', 'position: fixed; left: 0; top: 0; right: 0; bottom: 0; width: 100%; height: 100%; display: none; outline: none; border: none;');
@@ -173,7 +173,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 				var height = fbo.height * width / fbo.width;
 
 				var material = new THREE.MeshBasicMaterial({ map: fbo, side: THREE.BackSide });
-				var quad = new THREE.Mesh(new THREE.BoxBufferGeometry(width, height, .0001), material);
+				var quad = new THREE.Mesh(new THREE.PlaneBufferGeometry(width, height), material);
 				quad.rotation.x = Math.PI;
 				quad.visible = false;
 				quad.width = width;
