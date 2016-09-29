@@ -48,6 +48,7 @@ class FBOHelper {
 	constructor( renderer ) {
 
 		this.renderer = renderer;
+		this.autoUpdate = false;
 		this.fbos = []
 		this.list = document.createElement( 'ul' );
 		this.list.setAttribute( 'style', 'all: initial; position: fixed; left: 0; top: 0; z-index: 1000000; width: 150px' )
@@ -316,7 +317,7 @@ class FBOHelper {
 		this.renderer.autoClear = false;
 		this.renderer.render( this.scene, this.camera );
 		this.renderer.autoClear = true;
-		//this.readPixel( this.currentObj, this.currentU, this.currentV );
+		if( this.autoUpdate ) this.readPixel( this.currentObj, this.currentU, this.currentV );
 
 	}
 
