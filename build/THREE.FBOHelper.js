@@ -15,11 +15,12 @@ class FBOHelper {
 		this.scene = new THREE.Scene();
 		this.camera = new THREE.OrthographicCamera( -1, 1, 1, -1, -1000, 1000 );
 
-		this.layer = document.createElement( 'div' );
-		this.layer.setAttribute( 'style', 'position: fixed; left: 0; top: 0; right: 0; bottom: 0; width: 100%; height: 100%; display: none')
+		this.layer = document.createElement( 'iframe' );
+		this.layer.setAttribute( 'style', 'position: fixed; left: 0; top: 0; right: 0; bottom: 0; width: 100%; height: 100%; display: none; outline: none; border: none')
+		this.layer.setAttribute( 'src', '' );
 		document.body.appendChild( this.layer );
 
-		this.layer.addEventListener( 'wheel', e => {
+		this.layer.contentWindow.addEventListener( 'wheel', e => {
 
 			this.camera.zoom -= e.deltaY / 100;
 			this.camera.updateProjectionMatrix();
@@ -27,10 +28,11 @@ class FBOHelper {
 			this.label.style.transform = `scale(${1/this.camera.zoom},${1/this.camera.zoom})`;
 			this.hotspot.style.transform = `scale(${1/this.camera.zoom},${1/this.camera.zoom})`;
 			this.hotspot.style.borderWidth = `${1/this.camera.zoom}px`;
+			this.readPixel( this.currentObj, this.currentU, this.currentV );
 
 		} );
 
-		this.layer.addEventListener( 'mousemove', e => {
+		this.layer.contentWindow.addEventListener( 'mousemove', e => {
 
 			this.mouse.x = ( e.clientX / this.layer.clientWidth ) * 2 - 1;
 			this.mouse.y = - ( e.clientY / this.layer.clientHeight ) * 2 + 1;
@@ -56,7 +58,6 @@ class FBOHelper {
 
 		this.grid = document.createElement( 'div' );
 		this.grid.setAttribute( 'style', 'cursor: none; pointer-events: none; position: absolute; left: 50%; top: 50%; border: 1px solid #ff00ff; z-index: 9000; transform: translate3d(-50%, -50%, 0 )' );
-		this.layer.appendChild( this.grid );
 
 		this.hotspot = document.createElement( 'div' );
 		this.hotspot.setAttribute( 'style', 'cursor: none; pointer-events: none; position: absolute; left: 0; top: 0; border: 1px solid #fff; background-color: rgba( 255,0,255,.5); z-index: 9000' );
@@ -84,8 +85,8 @@ class FBOHelper {
 		const width = 600;
 		const height = fbo.height * width / fbo.width;
 
-		const material = new THREE.MeshBasicMaterial( { map: fbo, side: THREE.DoubleSide } );
-		const quad = new THREE.Mesh( new THREE.PlaneBufferGeometry( width, height ), material );
+		const material = new THREE.MeshBasicMaterial( { map: fbo, side: THREE.BackSide } );
+		const quad = new THREE.Mesh( new THREE.BoxBufferGeometry( width, height, .0001 ), material );
 		quad.rotation.x = Math.PI;
 		quad.visible = false;
 		quad.width = width;
@@ -188,10 +189,14 @@ class FBOHelper {
 
 	update() {
 
+		if( this.layer.contentWindow.document.body.children.length === 0 ) {
+			this.layer.contentWindow.document.body.appendChild( this.grid );
+		}
+
 		this.renderer.autoClear = false;
 		this.renderer.render( this.scene, this.camera );
 		this.renderer.autoClear = true;
-		this.readPixel( this.currentObj, this.currentU, this.currentV );
+		//this.readPixel( this.currentObj, this.currentU, this.currentV );
 
 	}
 
