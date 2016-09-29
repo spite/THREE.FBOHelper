@@ -63,7 +63,7 @@ class FBOHelper {
 		this.grid.appendChild( this.hotspot );
 
 		this.label = document.createElement( 'div' );
-		this.label.setAttribute( 'style', 'pointer-events: none; display: block; white-space: nowrap; color: black; padding: 10px; background-color: white; border: 1px solid black; z-index: 100000; position: absolute; left: 0; bottom: 0' );
+		this.label.setAttribute( 'style', 'pointer-events: none; display: block; white-space: nowrap; color: black; padding: 10px; background-color: white; border: 1px solid black; z-index: 100000; position: absolute; left: 0; bottom: 0; transform-origin: bottom left;' );
 		this.hotspot.appendChild( this.label );
 
 		this.currentObj = null;
@@ -84,8 +84,9 @@ class FBOHelper {
 		const width = 600;
 		const height = fbo.height * width / fbo.width;
 
-		const material = new THREE.MeshBasicMaterial( { map: fbo } );
+		const material = new THREE.MeshBasicMaterial( { map: fbo, side: THREE.DoubleSide } );
 		const quad = new THREE.Mesh( new THREE.PlaneBufferGeometry( width, height ), material );
+		quad.rotation.x = Math.PI;
 		quad.visible = false;
 		quad.width = width;
 		quad.height = height;
@@ -176,7 +177,7 @@ class FBOHelper {
 		this.label.innerHTML = `${posTxt}<br/>${dataTxt}`;
 
 		const ox = ~~( u * fbo.width ) * obj.quad.width / fbo.width;
-		const oy = ~~( ( 1 - v ) * fbo.height ) * obj.quad.height / fbo.height;
+		const oy = ~~( v * fbo.height ) * obj.quad.height / fbo.height;
 		this.hotspot.style.width = `${obj.quad.width / fbo.width}px`;
 		this.hotspot.style.height = `${obj.quad.height / fbo.height}px`;
 		this.hotspot.style.transform = `translate3d(${ox}px,${oy}px,0)`;
