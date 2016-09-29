@@ -105,7 +105,10 @@ class FBOHelper {
 
 			this.layer.contentWindow.addEventListener( 'wheel', e => {
 
-				this.camera.zoom -= e.deltaY / 100;
+				if (!e) e = event;
+				var direction = ( e.detail<0 || e.wheelDelta>0) ? 1 : -1;
+
+				this.camera.zoom += direction / 50;
 				this.camera.updateProjectionMatrix();
 				this.grid.style.transform = `translate3d(-50%, -50%, 0 ) scale(${this.camera.zoom},${this.camera.zoom})`;
 				this.label.style.transform = `scale(${1/this.camera.zoom},${1/this.camera.zoom})`;
