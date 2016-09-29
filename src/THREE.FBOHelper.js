@@ -2,6 +2,47 @@
 
 "use strict";
 
+var layerCSS = `
+*{
+	box-sizing: border-box;
+	padding: 0;
+	margin: 0;
+}
+body{
+	pointer-events: none;
+	font-family: 'courier new', courier, monospace;
+	font-size: 11px;
+}
+#grid{
+	cursor: none;
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	border: 1px solid #ff00ff;
+	transform: translate3d(-50%, -50%, 0 )
+}
+#hotspot{
+	cursor: none;
+	position: absolute;
+	left: 0;
+	top: 0;
+	border: 1px solid #fff;
+	background-color: rgba( 255,0,255,.5);
+}
+#label{
+	display: block;
+	white-space: nowrap;
+	color: black;
+	padding: 10px;
+	background-color: white;
+	border: 1px solid black;
+	position: absolute;
+	left: 0;
+	bottom: 0;
+	transform-origin: bottom left;
+}
+`;
+
 class FBOHelper {
 
 	constructor( renderer ) {
@@ -16,55 +57,21 @@ class FBOHelper {
 		this.camera = new THREE.OrthographicCamera( -1, 1, 1, -1, -1000, 1000 );
 
 		this.layer = document.createElement( 'iframe' );
-		this.layer.setAttribute( 'style', 'position: fixed; left: 0; top: 0; right: 0; bottom: 0; width: 100%; height: 100%; display: none; outline: none; border: none')
-		this.layer.setAttribute( 'src', '' );
+		this.layer.setAttribute( 'style', 'position: fixed; left: 0; top: 0; right: 0; bottom: 0; width: 100%; height: 100%; display: none; outline: none; border: none;')
 		document.body.appendChild( this.layer );
-
-		this.layer.contentWindow.addEventListener( 'wheel', e => {
-
-			this.camera.zoom -= e.deltaY / 100;
-			this.camera.updateProjectionMatrix();
-			this.grid.style.transform = `translate3d(-50%, -50%, 0 ) scale(${this.camera.zoom},${this.camera.zoom})`;
-			this.label.style.transform = `scale(${1/this.camera.zoom},${1/this.camera.zoom})`;
-			this.hotspot.style.transform = `scale(${1/this.camera.zoom},${1/this.camera.zoom})`;
-			this.hotspot.style.borderWidth = `${1/this.camera.zoom}px`;
-			this.readPixel( this.currentObj, this.currentU, this.currentV );
-
-		} );
-
-		this.layer.contentWindow.addEventListener( 'mousemove', e => {
-
-			this.mouse.x = ( e.clientX / this.layer.clientWidth ) * 2 - 1;
-			this.mouse.y = - ( e.clientY / this.layer.clientHeight ) * 2 + 1;
-			this.raycaster.setFromCamera( this.mouse, this.camera );
-
-			const intersects = this.raycaster.intersectObject( this.currentObj.quad, true );
-
-			if ( intersects.length > 0 ) {
-
-				this.readPixel( this.fboMap.get( intersects[ 0 ].object ), intersects[ 0 ].uv.x, intersects[ 0 ].uv.y );
-				this.label.style.display = 'block';
-
-			} else {
-
-				this.label.style.display = 'none';
-
-			}
-
-		} );
 
 		this.raycaster = new THREE.Raycaster();
 		this.mouse = new THREE.Vector2();
 
 		this.grid = document.createElement( 'div' );
-		this.grid.setAttribute( 'style', 'cursor: none; pointer-events: none; position: absolute; left: 50%; top: 50%; border: 1px solid #ff00ff; z-index: 9000; transform: translate3d(-50%, -50%, 0 )' );
+		this.grid.setAttribute( 'id', 'grid' );
 
 		this.hotspot = document.createElement( 'div' );
-		this.hotspot.setAttribute( 'style', 'cursor: none; pointer-events: none; position: absolute; left: 0; top: 0; border: 1px solid #fff; background-color: rgba( 255,0,255,.5); z-index: 9000' );
+		this.hotspot.setAttribute( 'id', 'hotspot' );
 		this.grid.appendChild( this.hotspot );
 
 		this.label = document.createElement( 'div' );
-		this.label.setAttribute( 'style', 'pointer-events: none; display: block; white-space: nowrap; color: black; padding: 10px; background-color: white; border: 1px solid black; z-index: 100000; position: absolute; left: 0; bottom: 0; transform-origin: bottom left;' );
+		this.label.setAttribute( 'id', 'label' );
 		this.hotspot.appendChild( this.label );
 
 		this.currentObj = null;
@@ -72,6 +79,58 @@ class FBOHelper {
 		this.currentV = 0;
 
 		this.fboMap = new Map();
+
+		this.layer.onload = () => {
+
+			this.layer.contentWindow.document.body.appendChild( this.grid );
+
+			const head = this.layer.contentWindow.document.head || this.layer.contentWindow.document.getElementsByTagName('head')[0];
+			const style = this.layer.contentWindow.document.createElement('style');
+
+			style.type = 'text/css';
+			if (style.styleSheet){
+				style.styleSheet.cssText = layerCSS;
+			} else {
+				style.appendChild(document.createTextNode(layerCSS));
+			}
+
+			head.appendChild(style);
+
+			this.layer.contentWindow.addEventListener( 'wheel', e => {
+
+				this.camera.zoom -= e.deltaY / 100;
+				this.camera.updateProjectionMatrix();
+				this.grid.style.transform = `translate3d(-50%, -50%, 0 ) scale(${this.camera.zoom},${this.camera.zoom})`;
+				this.label.style.transform = `scale(${1/this.camera.zoom},${1/this.camera.zoom})`;
+				this.hotspot.style.transform = `scale(${1/this.camera.zoom},${1/this.camera.zoom})`;
+				this.hotspot.style.borderWidth = `${1/this.camera.zoom}px`;
+				this.readPixel( this.currentObj, this.currentU, this.currentV );
+
+			} );
+
+			this.layer.contentWindow.addEventListener( 'mousemove', e => {
+
+				this.mouse.x = ( e.clientX / this.layer.clientWidth ) * 2 - 1;
+				this.mouse.y = - ( e.clientY / this.layer.clientHeight ) * 2 + 1;
+				this.raycaster.setFromCamera( this.mouse, this.camera );
+
+				const intersects = this.raycaster.intersectObject( this.currentObj.quad, true );
+
+				if ( intersects.length > 0 ) {
+
+					this.readPixel( this.fboMap.get( intersects[ 0 ].object ), intersects[ 0 ].uv.x, intersects[ 0 ].uv.y );
+					this.label.style.display = 'block';
+
+				} else {
+
+					this.label.style.display = 'none';
+
+				}
+
+			} );
+
+		};
+		this.layer.setAttribute( 'src', 'about:blank' );
 
 	}
 
@@ -188,10 +247,6 @@ class FBOHelper {
 	}
 
 	update() {
-
-		if( this.layer.contentWindow.document.body.children.length === 0 ) {
-			this.layer.contentWindow.document.body.appendChild( this.grid );
-		}
 
 		this.renderer.autoClear = false;
 		this.renderer.render( this.scene, this.camera );
