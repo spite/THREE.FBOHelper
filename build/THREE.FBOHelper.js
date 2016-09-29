@@ -10,7 +10,7 @@ var layerCSS = `
 }
 body{
 	pointer-events: none;
-	font-family: 'courier new', courier, monospace;
+	font-family: 'Roboto Mono', 'courier new', courier, monospace;
 	font-size: 11px;
 }
 #grid{
@@ -96,9 +96,19 @@ class FBOHelper {
 
 			head.appendChild(style);
 
+			const ss = document.createElement( 'link' );
+			ss.type = 'text/css';
+			ss.rel = 'stylesheet';
+			ss.href = 'https://fonts.googleapis.com/css?family=Roboto+Mono';
+
+			head.appendChild( ss );
+
 			this.layer.contentWindow.addEventListener( 'wheel', e => {
 
-				this.camera.zoom -= e.deltaY / 100;
+				if (!e) e = event;
+				var direction = ( e.detail<0 || e.wheelDelta>0) ? 1 : -1;
+
+				this.camera.zoom += direction / 50;
 				this.camera.updateProjectionMatrix();
 				this.grid.style.transform = `translate3d(-50%, -50%, 0 ) scale(${this.camera.zoom},${this.camera.zoom})`;
 				this.label.style.transform = `scale(${1/this.camera.zoom},${1/this.camera.zoom})`;
@@ -129,8 +139,28 @@ class FBOHelper {
 
 			} );
 
+			window.addEventListener( 'keydown', e => {
+				if( e.keyCode === 27 ) {
+					this.hide();
+				}
+			} );
+
+			this.layer.contentWindow.addEventListener( 'keydown', e => {
+				if( e.keyCode === 27 ) {
+					this.hide();
+				}
+			} );
+
 		};
 		this.layer.setAttribute( 'src', 'about:blank' );
+
+	}
+
+	hide() {
+
+		this.hideAll();
+		this.layer.style.display = 'none';
+		this.currentObj = null;
 
 	}
 

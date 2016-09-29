@@ -8,7 +8,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 	"use strict";
 
-	var layerCSS = '\n*{\n\tbox-sizing: border-box;\n\tpadding: 0;\n\tmargin: 0;\n}\nbody{\n\tpointer-events: none;\n\tfont-family: \'courier new\', courier, monospace;\n\tfont-size: 11px;\n}\n#grid{\n\tcursor: none;\n\tposition: absolute;\n\tleft: 50%;\n\ttop: 50%;\n\tborder: 1px solid #ff00ff;\n\ttransform: translate3d(-50%, -50%, 0 )\n}\n#hotspot{\n\tcursor: none;\n\tposition: absolute;\n\tleft: 0;\n\ttop: 0;\n\tborder: 1px solid #fff;\n\tbackground-color: rgba( 255,0,255,.5);\n}\n#label{\n\tdisplay: block;\n\twhite-space: nowrap;\n\tcolor: black;\n\tpadding: 10px;\n\tbackground-color: white;\n\tborder: 1px solid black;\n\tposition: absolute;\n\tleft: 0;\n\tbottom: 0;\n\ttransform-origin: bottom left;\n}\n';
+	var layerCSS = '\n*{\n\tbox-sizing: border-box;\n\tpadding: 0;\n\tmargin: 0;\n}\nbody{\n\tpointer-events: none;\n\tfont-family: \'Roboto Mono\', \'courier new\', courier, monospace;\n\tfont-size: 11px;\n}\n#grid{\n\tcursor: none;\n\tposition: absolute;\n\tleft: 50%;\n\ttop: 50%;\n\tborder: 1px solid #ff00ff;\n\ttransform: translate3d(-50%, -50%, 0 )\n}\n#hotspot{\n\tcursor: none;\n\tposition: absolute;\n\tleft: 0;\n\ttop: 0;\n\tborder: 1px solid #fff;\n\tbackground-color: rgba( 255,0,255,.5);\n}\n#label{\n\tdisplay: block;\n\twhite-space: nowrap;\n\tcolor: black;\n\tpadding: 10px;\n\tbackground-color: white;\n\tborder: 1px solid black;\n\tposition: absolute;\n\tleft: 0;\n\tbottom: 0;\n\ttransform-origin: bottom left;\n}\n';
 
 	var FBOHelper = function () {
 		function FBOHelper(renderer) {
@@ -65,9 +65,19 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 				head.appendChild(style);
 
+				var ss = document.createElement('link');
+				ss.type = 'text/css';
+				ss.rel = 'stylesheet';
+				ss.href = 'https://fonts.googleapis.com/css?family=Roboto+Mono';
+
+				head.appendChild(ss);
+
 				_this.layer.contentWindow.addEventListener('wheel', function (e) {
 
-					_this.camera.zoom -= e.deltaY / 100;
+					if (!e) e = event;
+					var direction = e.detail < 0 || e.wheelDelta > 0 ? 1 : -1;
+
+					_this.camera.zoom += direction / 50;
 					_this.camera.updateProjectionMatrix();
 					_this.grid.style.transform = 'translate3d(-50%, -50%, 0 ) scale(' + _this.camera.zoom + ',' + _this.camera.zoom + ')';
 					_this.label.style.transform = 'scale(' + 1 / _this.camera.zoom + ',' + 1 / _this.camera.zoom + ')';
@@ -93,11 +103,31 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 						_this.label.style.display = 'none';
 					}
 				});
+
+				window.addEventListener('keydown', function (e) {
+					if (e.keyCode === 27) {
+						_this.hide();
+					}
+				});
+
+				_this.layer.contentWindow.addEventListener('keydown', function (e) {
+					if (e.keyCode === 27) {
+						_this.hide();
+					}
+				});
 			};
 			this.layer.setAttribute('src', 'about:blank');
 		}
 
 		_createClass(FBOHelper, [{
+			key: 'hide',
+			value: function hide() {
+
+				this.hideAll();
+				this.layer.style.display = 'none';
+				this.currentObj = null;
+			}
+		}, {
 			key: 'attach',
 			value: function attach(fbo, name, formatter) {
 				var _this2 = this;
