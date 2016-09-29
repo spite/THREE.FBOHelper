@@ -10,7 +10,7 @@ var layerCSS = `
 }
 body{
 	pointer-events: none;
-	font-family: 'courier new', courier, monospace;
+	font-family: 'Roboto Mono', 'courier new', courier, monospace;
 	font-size: 11px;
 }
 #grid{
@@ -95,6 +95,13 @@ class FBOHelper {
 			}
 
 			head.appendChild(style);
+
+			const ss = document.createElement( 'link' );
+			ss.type = 'text/css';
+			ss.rel = 'stylesheet';
+			ss.href = 'https://fonts.googleapis.com/css?family=Roboto+Mono';
+
+			head.appendChild( ss );
 
 			this.layer.contentWindow.addEventListener( 'wheel', e => {
 
