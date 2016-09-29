@@ -80,6 +80,9 @@ class FBOHelper {
 
 		this.fboMap = new Map();
 
+		this.offsetX = 0;
+		this.offsetY = 0;
+
 		this.layer.onload = () => {
 
 			this.layer.contentWindow.document.body.appendChild( this.grid );
@@ -105,12 +108,11 @@ class FBOHelper {
 
 			this.layer.contentWindow.addEventListener( 'wheel', e => {
 
-				if (!e) e = event;
-				var direction = ( e.detail<0 || e.wheelDelta>0) ? 1 : -1;
+				var direction = ( e.deltaY < 0 ) ? 1 : -1;
 
 				this.camera.zoom += direction / 50;
 				this.camera.updateProjectionMatrix();
-				this.grid.style.transform = `translate3d(-50%, -50%, 0 ) scale(${this.camera.zoom},${this.camera.zoom})`;
+				this.grid.style.transform = `translate3d(-50%, -50%, 0 ) scale(${this.camera.zoom},${this.camera.zoom}) translate3d(${this.offsetX}px,${this.offsetY}px,0) `;
 				this.label.style.transform = `scale(${1/this.camera.zoom},${1/this.camera.zoom})`;
 				this.hotspot.style.transform = `scale(${1/this.camera.zoom},${1/this.camera.zoom})`;
 				this.hotspot.style.borderWidth = `${1/this.camera.zoom}px`;
@@ -118,22 +120,55 @@ class FBOHelper {
 
 			} );
 
+			let dragging = false;
+			let mouseStart = { x: 0, y: 0 };
+			let offsetStart = { x: 0, y: 0 };
+
+			this.layer.contentWindow.addEventListener( 'mousedown', e => {
+
+				dragging = true;
+				mouseStart.x = e.clientX;
+				mouseStart.y = e.clientY;
+				offsetStart.x = this.offsetX;
+				offsetStart.y = this.offsetY;
+
+			} );
+
+			this.layer.contentWindow.addEventListener( 'mouseup', e => {
+
+				dragging = false;
+
+			} );
+
 			this.layer.contentWindow.addEventListener( 'mousemove', e => {
 
-				this.mouse.x = ( e.clientX / this.layer.clientWidth ) * 2 - 1;
-				this.mouse.y = - ( e.clientY / this.layer.clientHeight ) * 2 + 1;
-				this.raycaster.setFromCamera( this.mouse, this.camera );
+				if( dragging ) {
 
-				const intersects = this.raycaster.intersectObject( this.currentObj.quad, true );
+					this.offsetX = offsetStart.x + ( e.clientX - mouseStart.x ) / this.camera.zoom;
+					this.offsetY = offsetStart.y + ( e.clientY - mouseStart.y ) / this.camera.zoom;
+					this.camera.position.x = -this.offsetX;
+					this.camera.position.y = this.offsetY;
 
-				if ( intersects.length > 0 ) {
-
-					this.readPixel( this.fboMap.get( intersects[ 0 ].object ), intersects[ 0 ].uv.x, intersects[ 0 ].uv.y );
-					this.label.style.display = 'block';
+					this.grid.style.transform = `translate3d(-50%, -50%, 0 ) scale(${this.camera.zoom},${this.camera.zoom}) translate3d(${this.offsetX}px,${this.offsetY}px,0)`;
 
 				} else {
 
-					this.label.style.display = 'none';
+					this.mouse.x = ( e.clientX / this.layer.clientWidth ) * 2 - 1;
+					this.mouse.y = - ( e.clientY / this.layer.clientHeight ) * 2 + 1;
+					this.raycaster.setFromCamera( this.mouse, this.camera );
+
+					const intersects = this.raycaster.intersectObject( this.currentObj.quad, true );
+
+					if ( intersects.length > 0 ) {
+
+						this.readPixel( this.fboMap.get( intersects[ 0 ].object ), intersects[ 0 ].uv.x, intersects[ 0 ].uv.y );
+						this.label.style.display = 'block';
+
+					} else {
+
+						this.label.style.display = 'none';
+
+					}
 
 				}
 
