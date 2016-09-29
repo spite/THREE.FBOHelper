@@ -24,7 +24,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 			this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, -1000, 1000);
 
 			this.layer = document.createElement('div');
-			this.layer.setAttribute('style', 'position: fixed; left: 0; top: 0; right: 0; bottom: 0; display: none');
+			this.layer.setAttribute('style', 'position: fixed; left: 0; top: 0; right: 0; bottom: 0; width: 100%; height: 100%; display: none');
 			document.body.appendChild(this.layer);
 
 			this.layer.addEventListener('wheel', function (e) {
@@ -43,7 +43,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 				_this.mouse.y = -(e.clientY / _this.layer.clientHeight) * 2 + 1;
 				_this.raycaster.setFromCamera(_this.mouse, _this.camera);
 
-				var intersects = _this.raycaster.intersectObjects(_this.scene.children);
+				var intersects = _this.raycaster.intersectObject(_this.currentObj.quad, true);
 
 				if (intersects.length > 0) {
 
@@ -67,7 +67,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 			this.grid.appendChild(this.hotspot);
 
 			this.label = document.createElement('div');
-			this.label.setAttribute('style', 'pointer-events: none; display: block; white-space: nowrap; color: black; padding: 10px; background-color: white; border: 1px solid black; z-index: 100000; position: absolute; left: 0; bottom: 0');
+			this.label.setAttribute('style', 'pointer-events: none; display: block; white-space: nowrap; color: black; padding: 10px; background-color: white; border: 1px solid black; z-index: 100000; position: absolute; left: 0; bottom: 0; transform-origin: bottom left;');
 			this.hotspot.appendChild(this.label);
 
 			this.currentObj = null;
@@ -90,8 +90,9 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 				var width = 600;
 				var height = fbo.height * width / fbo.width;
 
-				var material = new THREE.MeshBasicMaterial({ map: fbo });
+				var material = new THREE.MeshBasicMaterial({ map: fbo, side: THREE.DoubleSide });
 				var quad = new THREE.Mesh(new THREE.PlaneBufferGeometry(width, height), material);
+				quad.rotation.x = Math.PI;
 				quad.visible = false;
 				quad.width = width;
 				quad.height = height;
@@ -118,9 +119,11 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 						_this2.grid.style.width = width + 2 + 'px';
 						_this2.grid.style.height = height + 2 + 'px';
 						_this2.layer.style.display = 'block';
+						_this2.currentObj = fboData;
 					} else {
 						li.style.backgroundColor = '#444';
 						_this2.layer.style.display = 'none';
+						_this2.currentObj = null;
 					}
 				});
 
@@ -184,7 +187,6 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 			key: 'readPixel',
 			value: function readPixel(obj, u, v) {
 
-				this.currentObj = obj;
 				this.currentU = u;
 				this.currentV = v;
 
@@ -197,12 +199,12 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 				var pixelBuffer = new Float32Array(4);
 				renderer.readRenderTargetPixels(fbo, x, y, 1, 1, pixelBuffer);
-				var posTxt = 'X : ' + x + ' Y: ' + y;
+				var posTxt = 'X : ' + x + ' Y: ' + y + ' u: ' + u + ' v: ' + v;
 				var dataTxt = obj.formatter ? obj.formatter(pixelBuffer) : 'R: ' + pixelBuffer[0] + ' G: ' + pixelBuffer[1] + ' B: ' + pixelBuffer[2] + ' A: ' + pixelBuffer[3];
 				this.label.innerHTML = posTxt + '<br/>' + dataTxt;
 
 				var ox = ~~(u * fbo.width) * obj.quad.width / fbo.width;
-				var oy = ~~((1 - v) * fbo.height) * obj.quad.height / fbo.height;
+				var oy = ~~(v * fbo.height) * obj.quad.height / fbo.height;
 				this.hotspot.style.width = obj.quad.width / fbo.width + 'px';
 				this.hotspot.style.height = obj.quad.height / fbo.height + 'px';
 				this.hotspot.style.transform = 'translate3d(' + ox + 'px,' + oy + 'px,0)';
