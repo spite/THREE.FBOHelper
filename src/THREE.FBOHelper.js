@@ -84,8 +84,8 @@ class FBOHelper {
 		const width = 600;
 		const height = fbo.height * width / fbo.width;
 
-		const material = new THREE.MeshBasicMaterial( { map: fbo, side: THREE.DoubleSide } );
-		const quad = new THREE.Mesh( new THREE.PlaneBufferGeometry( width, height ), material );
+		const material = new THREE.MeshBasicMaterial( { map: fbo, side: THREE.BackSide } );
+		const quad = new THREE.Mesh( new THREE.BoxBufferGeometry( width, height, .0001 ), material );
 		quad.rotation.x = Math.PI;
 		quad.visible = false;
 		quad.width = width;
