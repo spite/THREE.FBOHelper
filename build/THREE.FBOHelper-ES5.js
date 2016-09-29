@@ -8,6 +8,8 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 	"use strict";
 
+	var layerCSS = '\n*{\n\tbox-sizing: border-box;\n\tpadding: 0;\n\tmargin: 0;\n}\nbody{\n\tpointer-events: none;\n\tfont-family: \'courier new\', courier, monospace;\n\tfont-size: 11px;\n}\n#grid{\n\tcursor: none;\n\tposition: absolute;\n\tleft: 50%;\n\ttop: 50%;\n\tborder: 1px solid #ff00ff;\n\ttransform: translate3d(-50%, -50%, 0 )\n}\n#hotspot{\n\tcursor: none;\n\tposition: absolute;\n\tleft: 0;\n\ttop: 0;\n\tborder: 1px solid #fff;\n\tbackground-color: rgba( 255,0,255,.5);\n}\n#label{\n\tdisplay: block;\n\twhite-space: nowrap;\n\tcolor: black;\n\tpadding: 10px;\n\tbackground-color: white;\n\tborder: 1px solid black;\n\tposition: absolute;\n\tleft: 0;\n\tbottom: 0;\n\ttransform-origin: bottom left;\n}\n';
+
 	var FBOHelper = function () {
 		function FBOHelper(renderer) {
 			var _this = this;
@@ -24,51 +26,21 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 			this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, -1000, 1000);
 
 			this.layer = document.createElement('iframe');
-			this.layer.setAttribute('style', 'position: fixed; left: 0; top: 0; right: 0; bottom: 0; width: 100%; height: 100%; display: none; outline: none; border: none');
-			this.layer.setAttribute('src', '');
+			this.layer.setAttribute('style', 'position: fixed; left: 0; top: 0; right: 0; bottom: 0; width: 100%; height: 100%; display: none; outline: none; border: none;');
 			document.body.appendChild(this.layer);
-
-			this.layer.contentWindow.addEventListener('wheel', function (e) {
-
-				_this.camera.zoom -= e.deltaY / 100;
-				_this.camera.updateProjectionMatrix();
-				_this.grid.style.transform = 'translate3d(-50%, -50%, 0 ) scale(' + _this.camera.zoom + ',' + _this.camera.zoom + ')';
-				_this.label.style.transform = 'scale(' + 1 / _this.camera.zoom + ',' + 1 / _this.camera.zoom + ')';
-				_this.hotspot.style.transform = 'scale(' + 1 / _this.camera.zoom + ',' + 1 / _this.camera.zoom + ')';
-				_this.hotspot.style.borderWidth = 1 / _this.camera.zoom + 'px';
-				_this.readPixel(_this.currentObj, _this.currentU, _this.currentV);
-			});
-
-			this.layer.contentWindow.addEventListener('mousemove', function (e) {
-
-				_this.mouse.x = e.clientX / _this.layer.clientWidth * 2 - 1;
-				_this.mouse.y = -(e.clientY / _this.layer.clientHeight) * 2 + 1;
-				_this.raycaster.setFromCamera(_this.mouse, _this.camera);
-
-				var intersects = _this.raycaster.intersectObject(_this.currentObj.quad, true);
-
-				if (intersects.length > 0) {
-
-					_this.readPixel(_this.fboMap.get(intersects[0].object), intersects[0].uv.x, intersects[0].uv.y);
-					_this.label.style.display = 'block';
-				} else {
-
-					_this.label.style.display = 'none';
-				}
-			});
 
 			this.raycaster = new THREE.Raycaster();
 			this.mouse = new THREE.Vector2();
 
 			this.grid = document.createElement('div');
-			this.grid.setAttribute('style', 'cursor: none; pointer-events: none; position: absolute; left: 50%; top: 50%; border: 1px solid #ff00ff; z-index: 9000; transform: translate3d(-50%, -50%, 0 )');
+			this.grid.setAttribute('id', 'grid');
 
 			this.hotspot = document.createElement('div');
-			this.hotspot.setAttribute('style', 'cursor: none; pointer-events: none; position: absolute; left: 0; top: 0; border: 1px solid #fff; background-color: rgba( 255,0,255,.5); z-index: 9000');
+			this.hotspot.setAttribute('id', 'hotspot');
 			this.grid.appendChild(this.hotspot);
 
 			this.label = document.createElement('div');
-			this.label.setAttribute('style', 'pointer-events: none; display: block; white-space: nowrap; color: black; padding: 10px; background-color: white; border: 1px solid black; z-index: 100000; position: absolute; left: 0; bottom: 0; transform-origin: bottom left;');
+			this.label.setAttribute('id', 'label');
 			this.hotspot.appendChild(this.label);
 
 			this.currentObj = null;
@@ -76,6 +48,53 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 			this.currentV = 0;
 
 			this.fboMap = new Map();
+
+			this.layer.onload = function () {
+
+				_this.layer.contentWindow.document.body.appendChild(_this.grid);
+
+				var head = _this.layer.contentWindow.document.head || _this.layer.contentWindow.document.getElementsByTagName('head')[0];
+				var style = _this.layer.contentWindow.document.createElement('style');
+
+				style.type = 'text/css';
+				if (style.styleSheet) {
+					style.styleSheet.cssText = layerCSS;
+				} else {
+					style.appendChild(document.createTextNode(layerCSS));
+				}
+
+				head.appendChild(style);
+
+				_this.layer.contentWindow.addEventListener('wheel', function (e) {
+
+					_this.camera.zoom -= e.deltaY / 100;
+					_this.camera.updateProjectionMatrix();
+					_this.grid.style.transform = 'translate3d(-50%, -50%, 0 ) scale(' + _this.camera.zoom + ',' + _this.camera.zoom + ')';
+					_this.label.style.transform = 'scale(' + 1 / _this.camera.zoom + ',' + 1 / _this.camera.zoom + ')';
+					_this.hotspot.style.transform = 'scale(' + 1 / _this.camera.zoom + ',' + 1 / _this.camera.zoom + ')';
+					_this.hotspot.style.borderWidth = 1 / _this.camera.zoom + 'px';
+					_this.readPixel(_this.currentObj, _this.currentU, _this.currentV);
+				});
+
+				_this.layer.contentWindow.addEventListener('mousemove', function (e) {
+
+					_this.mouse.x = e.clientX / _this.layer.clientWidth * 2 - 1;
+					_this.mouse.y = -(e.clientY / _this.layer.clientHeight) * 2 + 1;
+					_this.raycaster.setFromCamera(_this.mouse, _this.camera);
+
+					var intersects = _this.raycaster.intersectObject(_this.currentObj.quad, true);
+
+					if (intersects.length > 0) {
+
+						_this.readPixel(_this.fboMap.get(intersects[0].object), intersects[0].uv.x, intersects[0].uv.y);
+						_this.label.style.display = 'block';
+					} else {
+
+						_this.label.style.display = 'none';
+					}
+				});
+			};
+			this.layer.setAttribute('src', 'about:blank');
 		}
 
 		_createClass(FBOHelper, [{
@@ -214,10 +233,6 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		}, {
 			key: 'update',
 			value: function update() {
-
-				if (this.layer.contentWindow.document.body.children.length === 0) {
-					this.layer.contentWindow.document.body.appendChild(this.grid);
-				}
 
 				this.renderer.autoClear = false;
 				this.renderer.render(this.scene, this.camera);
