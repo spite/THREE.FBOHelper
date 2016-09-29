@@ -36,7 +36,7 @@ class FBOHelper {
 			this.mouse.y = - ( e.clientY / this.layer.clientHeight ) * 2 + 1;
 			this.raycaster.setFromCamera( this.mouse, this.camera );
 
-			const intersects = this.raycaster.intersectObjects( this.scene.children );
+			const intersects = this.raycaster.intersectObject( this.currentObj.quad, true );
 
 			if ( intersects.length > 0 ) {
 
@@ -113,9 +113,11 @@ class FBOHelper {
 				this.grid.style.width = ( width + 2 ) + 'px';
 				this.grid.style.height = ( height + 2 ) + 'px';
 				this.layer.style.display = 'block';
+				this.currentObj = fboData;
 			} else {
 				li.style.backgroundColor = '#444';
 				this.layer.style.display = 'none';
+				this.currentObj = null;
 			}
 		} );
 
@@ -159,7 +161,6 @@ class FBOHelper {
 
 	readPixel( obj, u, v ) {
 
-		this.currentObj = obj;
 		this.currentU = u;
 		this.currentV = v;
 
