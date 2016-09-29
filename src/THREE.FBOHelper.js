@@ -139,8 +139,28 @@ class FBOHelper {
 
 			} );
 
+			window.addEventListener( 'keydown', e => {
+				if( e.keyCode === 27 ) {
+					this.hide();
+				}
+			} );
+
+			this.layer.contentWindow.addEventListener( 'keydown', e => {
+				if( e.keyCode === 27 ) {
+					this.hide();
+				}
+			} );
+
 		};
 		this.layer.setAttribute( 'src', 'about:blank' );
+
+	}
+
+	hide() {
+
+		this.hideAll();
+		this.layer.style.display = 'none';
+		this.currentObj = null;
 
 	}
 
