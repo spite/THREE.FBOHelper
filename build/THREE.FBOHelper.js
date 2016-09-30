@@ -9,20 +9,10 @@ var layerCSS = `
 	margin: 0;
 }
 body{
-	pointer-events: none;
 	font-family: 'Roboto Mono', 'courier new', courier, monospace;
 	font-size: 11px;
 }
-#grid{
-	cursor: none;
-	position: absolute;
-	left: 50%;
-	top: 50%;
-	border: 1px solid #ff00ff;
-	transform: translate3d(-50%, -50%, 0 )
-}
 #hotspot{
-	cursor: none;
 	position: absolute;
 	left: 0;
 	top: 0;
@@ -57,15 +47,13 @@ class FBOHelper {
 		this.scene = new THREE.Scene();
 		this.camera = new THREE.OrthographicCamera( -1, 1, 1, -1, .000001, 1000 );
 
-		this.layer = document.createElement( 'iframe' );
-		this.layer.setAttribute( 'style', 'position: fixed; left: 0; top: 0; right: 0; bottom: 0; width: 100%; height: 100%; display: none; outline: none; border: none;')
-		document.body.appendChild( this.layer );
-
 		this.raycaster = new THREE.Raycaster();
 		this.mouse = new THREE.Vector2();
 
 		this.grid = document.createElement( 'div' );
+		this.grid.setAttribute( 'style', 'position: fixed; left: 50%; top: 50%; border: 1px solid #000000; transform: translate3d(-50%, -50%, 0 ); box-shadow: 0 0 50px black; display: none' );
 		this.grid.setAttribute( 'id', 'grid' );
+		document.body.appendChild( this.grid );
 
 		this.hotspot = document.createElement( 'div' );
 		this.hotspot.setAttribute( 'id', 'hotspot' );
@@ -84,118 +72,119 @@ class FBOHelper {
 		this.offsetX = 0;
 		this.offsetY = 0;
 
-		this.layer.onload = () => {
+		this.grid.appendChild( this.hotspot );
 
-			this.layer.contentWindow.document.body.appendChild( this.grid );
+		const head = window.document.head || window.document.getElementsByTagName('head')[0];
+		const style = window.document.createElement('style');
 
-			const head = this.layer.contentWindow.document.head || this.layer.contentWindow.document.getElementsByTagName('head')[0];
-			const style = this.layer.contentWindow.document.createElement('style');
+		style.type = 'text/css';
+		if (style.styleSheet){
+			style.styleSheet.cssText = layerCSS;
+		} else {
+			style.appendChild(document.createTextNode(layerCSS));
+		}
 
-			style.type = 'text/css';
-			if (style.styleSheet){
-				style.styleSheet.cssText = layerCSS;
+		head.appendChild(style);
+
+		const ss = document.createElement( 'link' );
+		ss.type = 'text/css';
+		ss.rel = 'stylesheet';
+		ss.href = 'https://fonts.googleapis.com/css?family=Roboto+Mono';
+
+		head.appendChild( ss );
+
+		this.grid.addEventListener( 'wheel', e => {
+
+			var direction = ( e.deltaY < 0 ) ? 1 : -1;
+
+			this.camera.zoom += direction / 50;
+			this.camera.updateProjectionMatrix();
+			this.grid.style.transform = `translate3d(-50%, -50%, 0 ) scale(${this.camera.zoom},${this.camera.zoom}) translate3d(${this.offsetX}px,${this.offsetY}px,0) `;
+			this.label.style.transform = `scale(${1/this.camera.zoom},${1/this.camera.zoom})`;
+			this.hotspot.style.transform = `scale(${1/this.camera.zoom},${1/this.camera.zoom})`;
+			this.hotspot.style.borderWidth = `${1/this.camera.zoom}px`;
+			this.readPixel( this.currentObj, this.currentU, this.currentV );
+
+		} );
+
+		let dragging = false;
+		let mouseStart = { x: 0, y: 0 };
+		let offsetStart = { x: 0, y: 0 };
+
+		this.grid.addEventListener( 'mousedown', e => {
+
+			dragging = true;
+			mouseStart.x = e.clientX;
+			mouseStart.y = e.clientY;
+			offsetStart.x = this.offsetX;
+			offsetStart.y = this.offsetY;
+
+		} );
+
+		this.grid.addEventListener( 'mouseup', e => {
+
+			dragging = false;
+
+		} );
+
+		this.grid.addEventListener( 'mouseout', e => {
+
+			dragging = false;
+
+		} );
+
+		this.grid.addEventListener( 'mousemove', e => {
+
+			if( dragging ) {
+
+				this.offsetX = offsetStart.x + ( e.clientX - mouseStart.x ) / this.camera.zoom;
+				this.offsetY = offsetStart.y + ( e.clientY - mouseStart.y ) / this.camera.zoom;
+				this.camera.position.x = -this.offsetX;
+				this.camera.position.y = this.offsetY;
+
+				this.grid.style.transform = `translate3d(-50%, -50%, 0 ) scale(${this.camera.zoom},${this.camera.zoom}) translate3d(${this.offsetX}px,${this.offsetY}px,0)`;
+
 			} else {
-				style.appendChild(document.createTextNode(layerCSS));
-			}
 
-			head.appendChild(style);
+				this.mouse.x = ( e.clientX / renderer.domElement.clientWidth ) * 2 - 1;
+				this.mouse.y = - ( e.clientY / renderer.domElement.clientHeight ) * 2 + 1;
+				this.raycaster.setFromCamera( this.mouse, this.camera );
 
-			const ss = document.createElement( 'link' );
-			ss.type = 'text/css';
-			ss.rel = 'stylesheet';
-			ss.href = 'https://fonts.googleapis.com/css?family=Roboto+Mono';
+				const intersects = this.raycaster.intersectObject( this.currentObj.quad, true );
 
-			head.appendChild( ss );
+				if ( intersects.length > 0 ) {
 
-			this.layer.contentWindow.addEventListener( 'wheel', e => {
-
-				var direction = ( e.deltaY < 0 ) ? 1 : -1;
-
-				this.camera.zoom += direction / 50;
-				this.camera.updateProjectionMatrix();
-				this.grid.style.transform = `translate3d(-50%, -50%, 0 ) scale(${this.camera.zoom},${this.camera.zoom}) translate3d(${this.offsetX}px,${this.offsetY}px,0) `;
-				this.label.style.transform = `scale(${1/this.camera.zoom},${1/this.camera.zoom})`;
-				this.hotspot.style.transform = `scale(${1/this.camera.zoom},${1/this.camera.zoom})`;
-				this.hotspot.style.borderWidth = `${1/this.camera.zoom}px`;
-				this.readPixel( this.currentObj, this.currentU, this.currentV );
-
-			} );
-
-			let dragging = false;
-			let mouseStart = { x: 0, y: 0 };
-			let offsetStart = { x: 0, y: 0 };
-
-			this.layer.contentWindow.addEventListener( 'mousedown', e => {
-
-				dragging = true;
-				mouseStart.x = e.clientX;
-				mouseStart.y = e.clientY;
-				offsetStart.x = this.offsetX;
-				offsetStart.y = this.offsetY;
-
-			} );
-
-			this.layer.contentWindow.addEventListener( 'mouseup', e => {
-
-				dragging = false;
-
-			} );
-
-			this.layer.contentWindow.addEventListener( 'mousemove', e => {
-
-				if( dragging ) {
-
-					this.offsetX = offsetStart.x + ( e.clientX - mouseStart.x ) / this.camera.zoom;
-					this.offsetY = offsetStart.y + ( e.clientY - mouseStart.y ) / this.camera.zoom;
-					this.camera.position.x = -this.offsetX;
-					this.camera.position.y = this.offsetY;
-
-					this.grid.style.transform = `translate3d(-50%, -50%, 0 ) scale(${this.camera.zoom},${this.camera.zoom}) translate3d(${this.offsetX}px,${this.offsetY}px,0)`;
+					this.readPixel( this.fboMap.get( intersects[ 0 ].object ), intersects[ 0 ].uv.x, intersects[ 0 ].uv.y );
+					this.label.style.display = 'block';
 
 				} else {
 
-					this.mouse.x = ( e.clientX / this.layer.clientWidth ) * 2 - 1;
-					this.mouse.y = - ( e.clientY / this.layer.clientHeight ) * 2 + 1;
-					this.raycaster.setFromCamera( this.mouse, this.camera );
-
-					const intersects = this.raycaster.intersectObject( this.currentObj.quad, true );
-
-					if ( intersects.length > 0 ) {
-
-						this.readPixel( this.fboMap.get( intersects[ 0 ].object ), intersects[ 0 ].uv.x, intersects[ 0 ].uv.y );
-						this.label.style.display = 'block';
-
-					} else {
-
-						this.label.style.display = 'none';
-
-					}
+					this.label.style.display = 'none';
 
 				}
 
-			} );
+			}
 
-			window.addEventListener( 'keydown', e => {
-				if( e.keyCode === 27 ) {
-					this.hide();
-				}
-			} );
+		} );
 
-			this.layer.contentWindow.addEventListener( 'keydown', e => {
-				if( e.keyCode === 27 ) {
-					this.hide();
-				}
-			} );
+		window.addEventListener( 'keydown', e => {
+			if( e.keyCode === 27 ) {
+				this.hide();
+			}
+		} );
 
-		};
-		this.layer.setAttribute( 'src', 'about:blank' );
+		this.grid.addEventListener( 'keydown', e => {
+			if( e.keyCode === 27 ) {
+				this.hide();
+			}
+		} );
 
 	}
 
 	hide() {
 
 		this.hideAll();
-		this.layer.style.display = 'none';
+		this.grid.style.display = 'none';
 		this.currentObj = null;
 
 	}
@@ -236,13 +225,13 @@ class FBOHelper {
 				this.hideAll();
 				quad.visible = true;
 				li.style.backgroundColor = '#ff00ff';
+				this.grid.style.display = 'block';
 				this.grid.style.width = ( width + 2 ) + 'px';
 				this.grid.style.height = ( height + 2 ) + 'px';
-				this.layer.style.display = 'block';
 				this.currentObj = fboData;
 			} else {
 				li.style.backgroundColor = '#444';
-				this.layer.style.display = 'none';
+				this.grid.style.display = 'none';
 				this.currentObj = null;
 			}
 		} );

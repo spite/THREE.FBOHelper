@@ -8,7 +8,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 	"use strict";
 
-	var layerCSS = '\n*{\n\tbox-sizing: border-box;\n\tpadding: 0;\n\tmargin: 0;\n}\nbody{\n\tpointer-events: none;\n\tfont-family: \'Roboto Mono\', \'courier new\', courier, monospace;\n\tfont-size: 11px;\n}\n#grid{\n\tcursor: none;\n\tposition: absolute;\n\tleft: 50%;\n\ttop: 50%;\n\tborder: 1px solid #ff00ff;\n\ttransform: translate3d(-50%, -50%, 0 )\n}\n#hotspot{\n\tcursor: none;\n\tposition: absolute;\n\tleft: 0;\n\ttop: 0;\n\tborder: 1px solid #fff;\n\tbackground-color: rgba( 255,0,255,.5);\n}\n#label{\n\tdisplay: block;\n\twhite-space: nowrap;\n\tcolor: black;\n\tpadding: 10px;\n\tbackground-color: white;\n\tborder: 1px solid black;\n\tposition: absolute;\n\tleft: 0;\n\tbottom: 0;\n\ttransform-origin: bottom left;\n}\n';
+	var layerCSS = '\n*{\n\tbox-sizing: border-box;\n\tpadding: 0;\n\tmargin: 0;\n}\nbody{\n\tfont-family: \'Roboto Mono\', \'courier new\', courier, monospace;\n\tfont-size: 11px;\n}\n#hotspot{\n\tposition: absolute;\n\tleft: 0;\n\ttop: 0;\n\tborder: 1px solid #fff;\n\tbackground-color: rgba( 255,0,255,.5);\n}\n#label{\n\tdisplay: block;\n\twhite-space: nowrap;\n\tcolor: black;\n\tpadding: 10px;\n\tbackground-color: white;\n\tborder: 1px solid black;\n\tposition: absolute;\n\tleft: 0;\n\tbottom: 0;\n\ttransform-origin: bottom left;\n}\n';
 
 	var FBOHelper = function () {
 		function FBOHelper(renderer) {
@@ -26,15 +26,13 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 			this.scene = new THREE.Scene();
 			this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, .000001, 1000);
 
-			this.layer = document.createElement('iframe');
-			this.layer.setAttribute('style', 'position: fixed; left: 0; top: 0; right: 0; bottom: 0; width: 100%; height: 100%; display: none; outline: none; border: none;');
-			document.body.appendChild(this.layer);
-
 			this.raycaster = new THREE.Raycaster();
 			this.mouse = new THREE.Vector2();
 
 			this.grid = document.createElement('div');
+			this.grid.setAttribute('style', 'position: fixed; left: 50%; top: 50%; border: 1px solid #000000; transform: translate3d(-50%, -50%, 0 ); box-shadow: 0 0 50px black; display: none');
 			this.grid.setAttribute('id', 'grid');
+			document.body.appendChild(this.grid);
 
 			this.hotspot = document.createElement('div');
 			this.hotspot.setAttribute('id', 'hotspot');
@@ -53,102 +51,103 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 			this.offsetX = 0;
 			this.offsetY = 0;
 
-			this.layer.onload = function () {
+			this.grid.appendChild(this.hotspot);
 
-				_this.layer.contentWindow.document.body.appendChild(_this.grid);
+			var head = window.document.head || window.document.getElementsByTagName('head')[0];
+			var style = window.document.createElement('style');
 
-				var head = _this.layer.contentWindow.document.head || _this.layer.contentWindow.document.getElementsByTagName('head')[0];
-				var style = _this.layer.contentWindow.document.createElement('style');
+			style.type = 'text/css';
+			if (style.styleSheet) {
+				style.styleSheet.cssText = layerCSS;
+			} else {
+				style.appendChild(document.createTextNode(layerCSS));
+			}
 
-				style.type = 'text/css';
-				if (style.styleSheet) {
-					style.styleSheet.cssText = layerCSS;
+			head.appendChild(style);
+
+			var ss = document.createElement('link');
+			ss.type = 'text/css';
+			ss.rel = 'stylesheet';
+			ss.href = 'https://fonts.googleapis.com/css?family=Roboto+Mono';
+
+			head.appendChild(ss);
+
+			this.grid.addEventListener('wheel', function (e) {
+
+				var direction = e.deltaY < 0 ? 1 : -1;
+
+				_this.camera.zoom += direction / 50;
+				_this.camera.updateProjectionMatrix();
+				_this.grid.style.transform = 'translate3d(-50%, -50%, 0 ) scale(' + _this.camera.zoom + ',' + _this.camera.zoom + ') translate3d(' + _this.offsetX + 'px,' + _this.offsetY + 'px,0) ';
+				_this.label.style.transform = 'scale(' + 1 / _this.camera.zoom + ',' + 1 / _this.camera.zoom + ')';
+				_this.hotspot.style.transform = 'scale(' + 1 / _this.camera.zoom + ',' + 1 / _this.camera.zoom + ')';
+				_this.hotspot.style.borderWidth = 1 / _this.camera.zoom + 'px';
+				_this.readPixel(_this.currentObj, _this.currentU, _this.currentV);
+			});
+
+			var dragging = false;
+			var mouseStart = { x: 0, y: 0 };
+			var offsetStart = { x: 0, y: 0 };
+
+			this.grid.addEventListener('mousedown', function (e) {
+
+				dragging = true;
+				mouseStart.x = e.clientX;
+				mouseStart.y = e.clientY;
+				offsetStart.x = _this.offsetX;
+				offsetStart.y = _this.offsetY;
+			});
+
+			this.grid.addEventListener('mouseup', function (e) {
+
+				dragging = false;
+			});
+
+			this.grid.addEventListener('mouseout', function (e) {
+
+				dragging = false;
+			});
+
+			this.grid.addEventListener('mousemove', function (e) {
+
+				if (dragging) {
+
+					_this.offsetX = offsetStart.x + (e.clientX - mouseStart.x) / _this.camera.zoom;
+					_this.offsetY = offsetStart.y + (e.clientY - mouseStart.y) / _this.camera.zoom;
+					_this.camera.position.x = -_this.offsetX;
+					_this.camera.position.y = _this.offsetY;
+
+					_this.grid.style.transform = 'translate3d(-50%, -50%, 0 ) scale(' + _this.camera.zoom + ',' + _this.camera.zoom + ') translate3d(' + _this.offsetX + 'px,' + _this.offsetY + 'px,0)';
 				} else {
-					style.appendChild(document.createTextNode(layerCSS));
-				}
 
-				head.appendChild(style);
+					_this.mouse.x = e.clientX / renderer.domElement.clientWidth * 2 - 1;
+					_this.mouse.y = -(e.clientY / renderer.domElement.clientHeight) * 2 + 1;
+					_this.raycaster.setFromCamera(_this.mouse, _this.camera);
 
-				var ss = document.createElement('link');
-				ss.type = 'text/css';
-				ss.rel = 'stylesheet';
-				ss.href = 'https://fonts.googleapis.com/css?family=Roboto+Mono';
+					var intersects = _this.raycaster.intersectObject(_this.currentObj.quad, true);
 
-				head.appendChild(ss);
+					if (intersects.length > 0) {
 
-				_this.layer.contentWindow.addEventListener('wheel', function (e) {
-
-					var direction = e.deltaY < 0 ? 1 : -1;
-
-					_this.camera.zoom += direction / 50;
-					_this.camera.updateProjectionMatrix();
-					_this.grid.style.transform = 'translate3d(-50%, -50%, 0 ) scale(' + _this.camera.zoom + ',' + _this.camera.zoom + ') translate3d(' + _this.offsetX + 'px,' + _this.offsetY + 'px,0) ';
-					_this.label.style.transform = 'scale(' + 1 / _this.camera.zoom + ',' + 1 / _this.camera.zoom + ')';
-					_this.hotspot.style.transform = 'scale(' + 1 / _this.camera.zoom + ',' + 1 / _this.camera.zoom + ')';
-					_this.hotspot.style.borderWidth = 1 / _this.camera.zoom + 'px';
-					_this.readPixel(_this.currentObj, _this.currentU, _this.currentV);
-				});
-
-				var dragging = false;
-				var mouseStart = { x: 0, y: 0 };
-				var offsetStart = { x: 0, y: 0 };
-
-				_this.layer.contentWindow.addEventListener('mousedown', function (e) {
-
-					dragging = true;
-					mouseStart.x = e.clientX;
-					mouseStart.y = e.clientY;
-					offsetStart.x = _this.offsetX;
-					offsetStart.y = _this.offsetY;
-				});
-
-				_this.layer.contentWindow.addEventListener('mouseup', function (e) {
-
-					dragging = false;
-				});
-
-				_this.layer.contentWindow.addEventListener('mousemove', function (e) {
-
-					if (dragging) {
-
-						_this.offsetX = offsetStart.x + (e.clientX - mouseStart.x) / _this.camera.zoom;
-						_this.offsetY = offsetStart.y + (e.clientY - mouseStart.y) / _this.camera.zoom;
-						_this.camera.position.x = -_this.offsetX;
-						_this.camera.position.y = _this.offsetY;
-
-						_this.grid.style.transform = 'translate3d(-50%, -50%, 0 ) scale(' + _this.camera.zoom + ',' + _this.camera.zoom + ') translate3d(' + _this.offsetX + 'px,' + _this.offsetY + 'px,0)';
+						_this.readPixel(_this.fboMap.get(intersects[0].object), intersects[0].uv.x, intersects[0].uv.y);
+						_this.label.style.display = 'block';
 					} else {
 
-						_this.mouse.x = e.clientX / _this.layer.clientWidth * 2 - 1;
-						_this.mouse.y = -(e.clientY / _this.layer.clientHeight) * 2 + 1;
-						_this.raycaster.setFromCamera(_this.mouse, _this.camera);
-
-						var intersects = _this.raycaster.intersectObject(_this.currentObj.quad, true);
-
-						if (intersects.length > 0) {
-
-							_this.readPixel(_this.fboMap.get(intersects[0].object), intersects[0].uv.x, intersects[0].uv.y);
-							_this.label.style.display = 'block';
-						} else {
-
-							_this.label.style.display = 'none';
-						}
+						_this.label.style.display = 'none';
 					}
-				});
+				}
+			});
 
-				window.addEventListener('keydown', function (e) {
-					if (e.keyCode === 27) {
-						_this.hide();
-					}
-				});
+			window.addEventListener('keydown', function (e) {
+				if (e.keyCode === 27) {
+					_this.hide();
+				}
+			});
 
-				_this.layer.contentWindow.addEventListener('keydown', function (e) {
-					if (e.keyCode === 27) {
-						_this.hide();
-					}
-				});
-			};
-			this.layer.setAttribute('src', 'about:blank');
+			this.grid.addEventListener('keydown', function (e) {
+				if (e.keyCode === 27) {
+					_this.hide();
+				}
+			});
 		}
 
 		_createClass(FBOHelper, [{
@@ -156,7 +155,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 			value: function hide() {
 
 				this.hideAll();
-				this.layer.style.display = 'none';
+				this.grid.style.display = 'none';
 				this.currentObj = null;
 			}
 		}, {
@@ -198,13 +197,13 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 						_this2.hideAll();
 						quad.visible = true;
 						li.style.backgroundColor = '#ff00ff';
+						_this2.grid.style.display = 'block';
 						_this2.grid.style.width = width + 2 + 'px';
 						_this2.grid.style.height = height + 2 + 'px';
-						_this2.layer.style.display = 'block';
 						_this2.currentObj = fboData;
 					} else {
 						li.style.backgroundColor = '#444';
-						_this2.layer.style.display = 'none';
+						_this2.grid.style.display = 'none';
 						_this2.currentObj = null;
 					}
 				});
