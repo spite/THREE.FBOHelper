@@ -151,7 +151,14 @@ class FBOHelper {
 
 		this.grid.addEventListener( 'mouseout', e => {
 
+			this.label.style.display = 'none';
 			dragging = false;
+
+		} );
+
+		this.grid.addEventListener( 'mouseover', e => {
+
+			this.label.style.display = 'block';
 
 		} );
 
