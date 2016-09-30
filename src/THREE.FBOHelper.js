@@ -316,7 +316,19 @@ class FBOHelper {
 		const pixelBuffer = new Float32Array( 4 );
 		renderer.readRenderTargetPixels( fbo, x, y, 1, 1, pixelBuffer );
 		const posTxt = `X : ${x} Y: ${y} u: ${u} v: ${v}`;
-		const dataTxt = obj.formatter ? obj.formatter( pixelBuffer ) : `R: ${pixelBuffer[ 0 ]} G: ${pixelBuffer[ 1 ]} B: ${pixelBuffer[ 2 ]} A: ${pixelBuffer[ 3 ]}`;
+		const dataTxt = obj.formatter ?
+			obj.formatter( {
+				x: x,
+				y: y,
+				u: u,
+				v: v,
+				r: pixelBuffer[ 0 ],
+				g: pixelBuffer[ 1 ],
+				b: pixelBuffer[ 2 ],
+				a: pixelBuffer[ 3 ]
+			} )
+			:
+			`R: ${pixelBuffer[ 0 ]} G: ${pixelBuffer[ 1 ]} B: ${pixelBuffer[ 2 ]} A: ${pixelBuffer[ 3 ]}`;
 		this.label.innerHTML = `${posTxt}<br/>${dataTxt}`;
 
 		const ox = ~~( u * fbo.width ) * obj.quad.width / fbo.width;
