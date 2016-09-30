@@ -8,7 +8,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 	"use strict";
 
-	var layerCSS = '\n*{\n\tbox-sizing: border-box;\n\tpadding: 0;\n\tmargin: 0;\n}\nbody{\n\tfont-family: \'Roboto Mono\', \'courier new\', courier, monospace;\n\tfont-size: 11px;\n}\n#hotspot{\n\tposition: absolute;\n\tleft: 0;\n\ttop: 0;\n\tborder: 1px solid #fff;\n\tbackground-color: rgba( 255,0,255,.5);\n}\n#label{\n\tdisplay: block;\n\twhite-space: nowrap;\n\tcolor: black;\n\tpadding: 10px;\n\tbackground-color: white;\n\tborder: 1px solid black;\n\tposition: absolute;\n\tleft: 0;\n\tbottom: 0;\n\ttransform-origin: bottom left;\n}\n';
+	var layerCSS = '\n#fbos-list{\n\tall: unset;\n\tposition: fixed;\n\tleft: 0;\n\ttop: 0;\n\tz-index: 1000000;\n\twidth: 150px;\n}\n#fbos-list, #fbos-list *, #hotspot, #label{\n\tbox-sizing: border-box;\n\tpadding: 0;\n\tmargin: 0;\n\tfont-family: \'Roboto Mono\', \'courier new\', courier, monospace;\n\tfont-size: 11px;\n\tline-height: 1.4em;\n}\n#fbos-list li{\n\tcursor: pointer;\n\tcolor: white;\n\twidth: 100%;\n\tpadding: 4px 0;\n\tborder-top: 1px solid #888;\n\tborder-bottom: 1px solid black;\n\tbackground-color: #444;\n\ttext-align: center;\n\ttext-shadow: 0 -1px black;\n}\n#fbos-list li:hover{\n\tbackground-color: rgba( 158, 253, 56, .5 );\n}\n#hotspot{\n\tposition: absolute;\n\tleft: 0;\n\ttop: 0;\n\tbackground-color: rgba( 158, 253, 56,.5);\n\tpointer-events: none;\n}\n#label{\n\tdisplay: block;\n\twhite-space: nowrap;\n\tcolor: black;\n\tpadding: 10px;\n\tbackground-color: white;\n\tborder: 1px solid black;\n\tposition: absolute;\n\tleft: 0;\n\tbottom: 0;\n\ttransform-origin: bottom left;\n\tpointer-events: none;\n}\n';
 
 	var FBOHelper = function () {
 		function FBOHelper(renderer) {
@@ -20,7 +20,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 			this.autoUpdate = false;
 			this.fbos = [];
 			this.list = document.createElement('ul');
-			this.list.setAttribute('style', 'all: initial; position: fixed; left: 0; top: 0; z-index: 1000000; width: 150px');
+			this.list.setAttribute('id', 'fbos-list');
 			document.body.appendChild(this.list);
 
 			this.scene = new THREE.Scene();
@@ -164,7 +164,6 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 				var _this2 = this;
 
 				var li = document.createElement('li');
-				li.setAttribute('style', 'cursor: pointer;color: white; width: 100%; padding: 4px 0; border-top: 1px solid #888; border-bottom: 1px solid black; background-color: #444; text-align: center; text-shadow: 0 -1px black');
 
 				li.textContent = name;
 
@@ -196,7 +195,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 					if (quad.visible) {
 						_this2.hideAll();
 						quad.visible = true;
-						li.style.backgroundColor = '#ff00ff';
+						li.style.backgroundColor = '#9EFD38';
 						_this2.grid.style.display = 'block';
 						_this2.grid.style.width = width + 2 + 'px';
 						_this2.grid.style.height = height + 2 + 'px';
