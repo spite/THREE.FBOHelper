@@ -167,12 +167,17 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 				li.textContent = name;
 
+				if (fbo.image) {
+					fbo.width = fbo.image.width;
+					fbo.height = fbo.image.height;
+				}
+
 				var width = 600;
 				var height = fbo.height * width / fbo.width;
 
-				var material = new THREE.MeshBasicMaterial({ map: fbo, side: THREE.BackSide });
+				var material = new THREE.MeshBasicMaterial({ map: fbo, side: THREE.DoubleSide });
 				var quad = new THREE.Mesh(new THREE.PlaneBufferGeometry(width, height), material);
-				quad.rotation.x = Math.PI;
+				if (!fbo.flipY) quad.rotation.x = Math.PI;
 				quad.visible = false;
 				quad.width = width;
 				quad.height = height;
@@ -181,6 +186,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 				var fboData = {
 					name: name,
 					fbo: fbo,
+					flipY: fbo.flipY,
 					li: li,
 					visible: false,
 					quad: quad,
@@ -284,7 +290,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 				this.label.innerHTML = posTxt + '<br/>' + dataTxt;
 
 				var ox = ~~(u * fbo.width) * obj.quad.width / fbo.width;
-				var oy = ~~(v * fbo.height) * obj.quad.height / fbo.height;
+				var oy = ~~(obj.flipY ? (1 - v) * fbo.height : v * fbo.height) * obj.quad.height / fbo.height;
 				this.hotspot.style.width = obj.quad.width / fbo.width + 'px';
 				this.hotspot.style.height = obj.quad.height / fbo.height + 'px';
 				this.hotspot.style.transform = 'translate3d(' + ox + 'px,' + oy + 'px,0)';

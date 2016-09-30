@@ -217,12 +217,17 @@ class FBOHelper {
 
 		li.textContent = name;
 
+		if( fbo.image ) {
+			fbo.width = fbo.image.width;
+			fbo.height = fbo.image.height;
+		}
+
 		const width = 600;
 		const height = fbo.height * width / fbo.width;
 
-		const material = new THREE.MeshBasicMaterial( { map: fbo, side: THREE.BackSide } );
+		const material = new THREE.MeshBasicMaterial( { map: fbo, side: THREE.DoubleSide } );
 		const quad = new THREE.Mesh( new THREE.PlaneBufferGeometry( width, height ), material );
-		quad.rotation.x = Math.PI;
+		if( !fbo.flipY ) quad.rotation.x = Math.PI;
 		quad.visible = false;
 		quad.width = width;
 		quad.height = height;
@@ -231,6 +236,7 @@ class FBOHelper {
 		var fboData = {
 			name: name,
 			fbo: fbo,
+			flipY: fbo.flipY,
 			li: li,
 			visible: false,
 			quad: quad,
@@ -314,7 +320,7 @@ class FBOHelper {
 		this.label.innerHTML = `${posTxt}<br/>${dataTxt}`;
 
 		const ox = ~~( u * fbo.width ) * obj.quad.width / fbo.width;
-		const oy = ~~( v * fbo.height ) * obj.quad.height / fbo.height;
+		const oy = ~~( obj.flipY ? ( 1 - v ) * fbo.height : v * fbo.height ) * obj.quad.height / fbo.height;
 		this.hotspot.style.width = `${obj.quad.width / fbo.width}px`;
 		this.hotspot.style.height = `${obj.quad.height / fbo.height}px`;
 		this.hotspot.style.transform = `translate3d(${ox}px,${oy}px,0)`;
