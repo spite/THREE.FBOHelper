@@ -105,7 +105,13 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 			this.grid.addEventListener('mouseout', function (e) {
 
+				_this.label.style.display = 'none';
 				dragging = false;
+			});
+
+			this.grid.addEventListener('mouseover', function (e) {
+
+				_this.label.style.display = 'block';
 			});
 
 			this.grid.addEventListener('mousemove', function (e) {
@@ -286,7 +292,16 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 				var pixelBuffer = new Float32Array(4);
 				renderer.readRenderTargetPixels(fbo, x, y, 1, 1, pixelBuffer);
 				var posTxt = 'X : ' + x + ' Y: ' + y + ' u: ' + u + ' v: ' + v;
-				var dataTxt = obj.formatter ? obj.formatter(pixelBuffer) : 'R: ' + pixelBuffer[0] + ' G: ' + pixelBuffer[1] + ' B: ' + pixelBuffer[2] + ' A: ' + pixelBuffer[3];
+				var dataTxt = obj.formatter ? obj.formatter({
+					x: x,
+					y: y,
+					u: u,
+					v: v,
+					r: pixelBuffer[0],
+					g: pixelBuffer[1],
+					b: pixelBuffer[2],
+					a: pixelBuffer[3]
+				}) : 'R: ' + pixelBuffer[0] + ' G: ' + pixelBuffer[1] + ' B: ' + pixelBuffer[2] + ' A: ' + pixelBuffer[3];
 				this.label.innerHTML = posTxt + '<br/>' + dataTxt;
 
 				var ox = ~~(u * fbo.width) * obj.quad.width / fbo.width;
