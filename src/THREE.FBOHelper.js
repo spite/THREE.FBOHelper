@@ -3,21 +3,42 @@
 "use strict";
 
 var layerCSS = `
-*{
+#fbos-list{
+	all: unset;
+	position: fixed;
+	left: 0;
+	top: 0;
+	z-index: 1000000;
+	width: 150px;
+}
+#fbos-list, #fbos-list *, #hotspot, #label{
 	box-sizing: border-box;
 	padding: 0;
 	margin: 0;
-}
-body{
 	font-family: 'Roboto Mono', 'courier new', courier, monospace;
 	font-size: 11px;
+	line-height: 1.4em;
+}
+#fbos-list li{
+	cursor: pointer;
+	color: white;
+	width: 100%;
+	padding: 4px 0;
+	border-top: 1px solid #888;
+	border-bottom: 1px solid black;
+	background-color: #444;
+	text-align: center;
+	text-shadow: 0 -1px black;
+}
+#fbos-list li:hover{
+	background-color: rgba( 158, 253, 56, .5 );
 }
 #hotspot{
 	position: absolute;
 	left: 0;
 	top: 0;
-	border: 1px solid #fff;
-	background-color: rgba( 255,0,255,.5);
+	background-color: rgba( 158, 253, 56,.5);
+	pointer-events: none;
 }
 #label{
 	display: block;
@@ -30,6 +51,7 @@ body{
 	left: 0;
 	bottom: 0;
 	transform-origin: bottom left;
+	pointer-events: none;
 }
 `;
 
@@ -41,7 +63,7 @@ class FBOHelper {
 		this.autoUpdate = false;
 		this.fbos = []
 		this.list = document.createElement( 'ul' );
-		this.list.setAttribute( 'style', 'all: initial; position: fixed; left: 0; top: 0; z-index: 1000000; width: 150px' )
+		this.list.setAttribute( 'id', 'fbos-list' );
 		document.body.appendChild( this.list );
 
 		this.scene = new THREE.Scene();
@@ -192,7 +214,6 @@ class FBOHelper {
 	attach( fbo, name, formatter ) {
 
 		var li = document.createElement( 'li' );
-		li.setAttribute( 'style', 'cursor: pointer;color: white; width: 100%; padding: 4px 0; border-top: 1px solid #888; border-bottom: 1px solid black; background-color: #444; text-align: center; text-shadow: 0 -1px black' );
 
 		li.textContent = name;
 
@@ -224,7 +245,7 @@ class FBOHelper {
 			if( quad.visible ) {
 				this.hideAll();
 				quad.visible = true;
-				li.style.backgroundColor = '#ff00ff';
+				li.style.backgroundColor = '#9EFD38';
 				this.grid.style.display = 'block';
 				this.grid.style.width = ( width + 2 ) + 'px';
 				this.grid.style.height = ( height + 2 ) + 'px';
