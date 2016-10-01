@@ -320,7 +320,20 @@ class FBOHelper {
 		const x = ~~( fbo.width * u );
 		const y = ~~( fbo.height * v );
 
-		const pixelBuffer = new Float32Array( 4 );
+		let types = {}
+		types[ THREE.UnsignedByteType ] = Uint8Array;
+		types[ THREE.ByteType ] = Int8Array;
+		types[ THREE.ShortType ] = Int16Array;
+		types[ THREE.UnsignedShortType ] = Uint16Array;
+		types[ THREE.IntType ] = Int32Array;
+		types[ THREE.UnsignedIntType ] = Uint32Array;
+		types[ THREE.FloatType ] = Float32Array;
+		types[ THREE.UnsignedShort4444Type ] = Uint16Array;
+		types[ THREE.UnsignedShort5551Type ] = Uint16Array;
+		types[ THREE.UnsignedShort565Type ] = Uint16Array;
+
+		const pixelBuffer = new ( types[ fbo.texture.type ] )( 4 );
+
 		renderer.readRenderTargetPixels( fbo, x, y, 1, 1, pixelBuffer );
 		const posTxt = `X : ${x} Y: ${y} u: ${u} v: ${v}`;
 		const dataTxt = obj.formatter ?
