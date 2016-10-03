@@ -31,6 +31,11 @@ var layerCSS = `
 #fbos-list li:hover{
 	background-color: rgba( 158, 253, 56, .5 );
 }
+#fbos-list li.active{
+	background-color: rgba( 158, 253, 56, .5 );
+	color: white;
+	text-shadow: 0 1px black;
+}
 #hotspot{
 	position: absolute;
 	left: 0;
@@ -292,15 +297,16 @@ class FBOHelper {
 			if( quad.visible ) {
 				this.hideAll();
 				quad.visible = true;
-				li.style.backgroundColor = '#9EFD38';
+				li.classList.add( 'active' );
 				this.info.style.display = 'block';
 				this.grid.style.display = 'block';
 				this.grid.style.width = ( width + 2 ) + 'px';
 				this.grid.style.height = ( height + 2 ) + 'px';
 				this.currentObj = fboData;
+				this.info.innerHTML = `Width: ${fbo.width} Height: ${fbo.height}<br/>Format: ${formats[fbo.texture.format]} Type: ${types[fbo.texture.type]}`;
 			} else {
-				li.style.backgroundColor = '#444';
 				this.info.style.display = 'none';
+				li.classList.remove( 'active' );
 				this.grid.style.display = 'none';
 				this.currentObj = null;
 			}
@@ -318,7 +324,7 @@ class FBOHelper {
 
 		this.fbos.forEach( fbo => {
 			fbo.quad.visible = false;
-			fbo.li.style.backgroundColor = '#444';
+			fbo.li.classList.remove( 'active' );
 		} );
 
 	}
