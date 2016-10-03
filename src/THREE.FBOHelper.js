@@ -370,11 +370,18 @@ class FBOHelper {
 		types[ THREE.IntType ] = Int32Array;
 		types[ THREE.UnsignedIntType ] = Uint32Array;
 		types[ THREE.FloatType ] = Float32Array;
+		types[ THREE.HalfFloatType ] = null;
 		types[ THREE.UnsignedShort4444Type ] = Uint16Array;
 		types[ THREE.UnsignedShort5551Type ] = Uint16Array;
 		types[ THREE.UnsignedShort565Type ] = Uint16Array;
 
-		const pixelBuffer = new ( types[ fbo.texture.type ] )( 4 );
+		var type = types[ fbo.texture.type ];
+		if( type === null ) {
+			console.warning( fbo.texture.type + ' not supported' );
+			return;
+		}
+
+		const pixelBuffer = new ( type )( 4 );
 
 		renderer.readRenderTargetPixels( fbo, x, y, 1, 1, pixelBuffer );
 		const posTxt = `X : ${x} Y: ${y} u: ${u} v: ${v}`;
