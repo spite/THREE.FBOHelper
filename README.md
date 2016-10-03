@@ -22,6 +22,13 @@ helper.setSize( width, height );
 helper.attach( fieldFBO, 'Distance Field' );
 helper.attach( particleFBO, 'Particles' );
 ```
+```attach()``` admits a third parameters, ```formatter```, a function that will receive an object with the values of the current point ```x```, ```y```, ```u```, ```v```, ```r```, ```g```, ```b```, and ```a```. You can return a custom string in case you want to show a different caption in the label. Otherwise, it will show all the values. 
+Example:
+```js
+helper.attach( buffer, 'Particles', function( d ) {
+  return `Position: (${d.x}, ${d.y}, ${d.z}) | Life: ${d.a}`;
+} );
+```
 - Update with your animation loop
 ```js
 helper.update();
