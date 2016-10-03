@@ -3,8 +3,16 @@ FrameBuffer Object inspector for three.js
 
 # WIP
 
-![Snapshot](https://raw.githubusercontent.com/spite/THREE.FBOHelper/master/about/snapshot1.jpg "Snapshot")
-![Snapshot](https://raw.githubusercontent.com/spite/THREE.FBOHelper/master/about/snapshot2.jpg "Snapshot")
+<table>
+<tr>
+<td><img src="https://raw.githubusercontent.com/spite/THREE.FBOHelper/master/about/snapshot1.jpg" alt="Snapshot"/>Velocity buffer</td>
+<td><img src="https://raw.githubusercontent.com/spite/THREE.FBOHelper/master/about/snapshot2.jpg" alt="Snapshot"/>Position buffer</td>
+</tr>
+<tr>
+<td><img src="https://raw.githubusercontent.com/spite/THREE.FBOHelper/master/about/snapshot3.jpg" alt="Snapshot"/>Shadow map buffer</td>
+<td><img src="https://raw.githubusercontent.com/spite/THREE.FBOHelper/master/about/snapshot4.jpg" alt="Snapshot"/>Position buffer</td>
+</tr>
+</table>
 
 # How to use
 
