@@ -1,10 +1,18 @@
 # THREE.FBOHelper
 FrameBuffer Object inspector for three.js
 
-# WIP
+# Screenshots
 
-![Snapshot](https://raw.githubusercontent.com/spite/THREE.FBOHelper/master/about/snapshot1.jpg "Snapshot")
-![Snapshot](https://raw.githubusercontent.com/spite/THREE.FBOHelper/master/about/snapshot2.jpg "Snapshot")
+<table>
+<tr>
+<td><img src="https://raw.githubusercontent.com/spite/THREE.FBOHelper/master/about/snapshot1.jpg" alt="Snapshot"/>Velocity buffer</td>
+<td><img src="https://raw.githubusercontent.com/spite/THREE.FBOHelper/master/about/snapshot2.jpg" alt="Snapshot"/>Position buffer</td>
+</tr>
+<tr>
+<td><img src="https://raw.githubusercontent.com/spite/THREE.FBOHelper/master/about/snapshot3.jpg" alt="Snapshot"/>Shadow map buffer</td>
+<td><img src="https://raw.githubusercontent.com/spite/THREE.FBOHelper/master/about/snapshot4.jpg" alt="Snapshot"/>Position buffer</td>
+</tr>
+</table>
 
 # How to use
 
@@ -33,3 +41,12 @@ helper.attach( buffer, 'Particles', function( d ) {
 ```js
 helper.update();
 ```
+
+Once the helper is working, you can select FBOs to inspect, and drag the viewer around and use the scroll/mousewheel to zoom in and out.
+
+#### License ####
+
+MIT licensed
+
+Copyright (C) 2016 Jaume Sanchez Elias, http://www.clicktorelease.com
+
