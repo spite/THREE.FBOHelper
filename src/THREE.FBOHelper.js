@@ -13,8 +13,6 @@ var layerCSS = `
 }
 #fbos-list, #fbos-list *, #hotspot, #label{
 	box-sizing: border-box;
-	padding: 0;
-	margin: 0;
 	font-family: 'Roboto Mono', 'courier new', courier, monospace;
 	font-size: 11px;
 	line-height: 1.4em;
