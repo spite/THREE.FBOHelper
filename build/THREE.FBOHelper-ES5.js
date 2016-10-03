@@ -8,7 +8,28 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 	"use strict";
 
-	var layerCSS = '\n#fbos-list{\n\tall: unset;\n\tposition: fixed;\n\tleft: 0;\n\ttop: 0;\n\tz-index: 1000000;\n\twidth: 150px;\n}\n#fbos-list, #fbos-list *, #hotspot, #label{\n\tbox-sizing: border-box;\n\tpadding: 0;\n\tmargin: 0;\n\tfont-family: \'Roboto Mono\', \'courier new\', courier, monospace;\n\tfont-size: 11px;\n\tline-height: 1.4em;\n}\n#fbos-list li{\n\tcursor: pointer;\n\tcolor: white;\n\twidth: 100%;\n\tpadding: 4px 0;\n\tborder-top: 1px solid #888;\n\tborder-bottom: 1px solid black;\n\tbackground-color: #444;\n\ttext-align: center;\n\ttext-shadow: 0 -1px black;\n}\n#fbos-list li:hover{\n\tbackground-color: rgba( 158, 253, 56, .5 );\n}\n#hotspot{\n\tposition: absolute;\n\tleft: 0;\n\ttop: 0;\n\tbackground-color: rgba( 158, 253, 56,.5);\n\tpointer-events: none;\n}\n#label{\n\tdisplay: block;\n\twhite-space: nowrap;\n\tcolor: black;\n\tpadding: 10px;\n\tbackground-color: white;\n\tborder: 1px solid black;\n\tposition: absolute;\n\tleft: 0;\n\tbottom: 0;\n\ttransform-origin: bottom left;\n\tpointer-events: none;\n}\n';
+	var layerCSS = '\n#fbos-list{\n\tall: unset;\n\tposition: fixed;\n\tleft: 0;\n\ttop: 0;\n\tz-index: 1000000;\n\twidth: 150px;\n}\n#fbos-list, #fbos-list *, #hotspot, #label{\n\tbox-sizing: border-box;\n\tfont-family: \'Roboto Mono\', \'courier new\', courier, monospace;\n\tfont-size: 11px;\n\tline-height: 1.4em;\n}\n#fbos-list li{\n\tcursor: pointer;\n\tcolor: white;\n\twidth: 100%;\n\tpadding: 4px 0;\n\tborder-top: 1px solid #888;\n\tborder-bottom: 1px solid black;\n\tbackground-color: #444;\n\ttext-align: center;\n\ttext-shadow: 0 -1px black;\n}\n#fbos-list li:hover{\n\tbackground-color: rgba( 158, 253, 56, .5 );\n}\n#fbos-list li.active{\n\tbackground-color: rgba( 158, 253, 56, .5 );\n\tcolor: white;\n\ttext-shadow: 0 1px black;\n}\n#hotspot{\n\tposition: absolute;\n\tleft: 0;\n\ttop: 0;\n\tbackground-color: rgba( 158, 253, 56,.5);\n\tpointer-events: none;\n}\n#label{\n\tposition: absolute;\n\tleft: 0;\n\tbottom: 0;\n\ttransform-origin: bottom left;\n\tpointer-events: none;\n}\n#info{\n\tdisplay: none;\n\tposition: absolute;\n\tleft: 160px;\n\ttop: 10px;\n\tpointer-events: none;\n}\n.card{\n\tdisplay: block;\n\twhite-space: nowrap;\n\tcolor: black;\n\tpadding: 10px;\n\tbackground-color: white;\n\tborder: 1px solid black;\n}\n';
+
+	var formats = {};
+	formats[THREE.AlphaFormat] = 'THREE.AlphaFormat';
+	formats[THREE.RGBFormat] = 'THREE.RGBFormat';
+	formats[THREE.RGBAFormat] = 'THREE.RGBAFormat';
+	formats[THREE.LuminanceFormat] = 'THREE.LuminanceFormat';
+	formats[THREE.LuminanceAlphaFormat] = 'THREE.LuminanceAlphaFormat';
+	//formats[ THREE.RGBEFormat ] = 'THREE.RGBEFormat';
+
+	var types = {};
+	types[THREE.UnsignedByteType] = 'THREE.UnsignedByteType';
+	types[THREE.ByteType] = 'THREE.ByteType';
+	types[THREE.ShortType] = 'THREE.ShortType';
+	types[THREE.UnsignedShortType] = 'THREE.UnsignedShortType';
+	types[THREE.IntType] = 'THREE.IntType';
+	types[THREE.UnsignedIntType] = 'THREE.UnsignedIntType';
+	types[THREE.FloatType] = 'THREE.FloatType';
+	types[THREE.HalfFloatType] = 'THREE.HalfFloatType';
+	types[THREE.UnsignedShort4444Type] = 'THREE.UnsignedShort4444Type';
+	types[THREE.UnsignedShort5551Type] = 'THREE.UnsignedShort5551Type';
+	types[THREE.UnsignedShort565Type] = 'THREE.UnsignedShort565Type';
 
 	var FBOHelper = function () {
 		function FBOHelper(renderer) {
@@ -40,7 +61,13 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 			this.label = document.createElement('div');
 			this.label.setAttribute('id', 'label');
+			this.label.className = 'card';
 			this.hotspot.appendChild(this.label);
+
+			this.info = document.createElement('div');
+			this.info.setAttribute('id', 'info');
+			this.info.className = 'card';
+			document.body.appendChild(this.info);
 
 			this.currentObj = null;
 			this.currentU = 0;
@@ -207,13 +234,16 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 					if (quad.visible) {
 						_this2.hideAll();
 						quad.visible = true;
-						li.style.backgroundColor = '#9EFD38';
+						li.classList.add('active');
+						_this2.info.style.display = 'block';
 						_this2.grid.style.display = 'block';
 						_this2.grid.style.width = width + 2 + 'px';
 						_this2.grid.style.height = height + 2 + 'px';
 						_this2.currentObj = fboData;
+						_this2.info.innerHTML = 'Width: ' + fbo.width + ' Height: ' + fbo.height + '<br/>Format: ' + formats[fbo.texture.format] + ' Type: ' + types[fbo.texture.type];
 					} else {
-						li.style.backgroundColor = '#444';
+						_this2.info.style.display = 'none';
+						li.classList.remove('active');
 						_this2.grid.style.display = 'none';
 						_this2.currentObj = null;
 					}
@@ -230,7 +260,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 				this.fbos.forEach(function (fbo) {
 					fbo.quad.visible = false;
-					fbo.li.style.backgroundColor = '#444';
+					fbo.li.classList.remove('active');
 				});
 			}
 		}, {
@@ -297,11 +327,18 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 				types[THREE.IntType] = Int32Array;
 				types[THREE.UnsignedIntType] = Uint32Array;
 				types[THREE.FloatType] = Float32Array;
+				types[THREE.HalfFloatType] = null;
 				types[THREE.UnsignedShort4444Type] = Uint16Array;
 				types[THREE.UnsignedShort5551Type] = Uint16Array;
 				types[THREE.UnsignedShort565Type] = Uint16Array;
 
-				var pixelBuffer = new types[fbo.texture.type](4);
+				var type = types[fbo.texture.type];
+				if (type === null) {
+					console.warning(fbo.texture.type + ' not supported');
+					return;
+				}
+
+				var pixelBuffer = new type(4);
 
 				renderer.readRenderTargetPixels(fbo, x, y, 1, 1, pixelBuffer);
 				var posTxt = 'X : ' + x + ' Y: ' + y + ' u: ' + u + ' v: ' + v;

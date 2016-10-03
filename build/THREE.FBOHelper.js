@@ -13,8 +13,6 @@ var layerCSS = `
 }
 #fbos-list, #fbos-list *, #hotspot, #label{
 	box-sizing: border-box;
-	padding: 0;
-	margin: 0;
 	font-family: 'Roboto Mono', 'courier new', courier, monospace;
 	font-size: 11px;
 	line-height: 1.4em;
@@ -33,6 +31,11 @@ var layerCSS = `
 #fbos-list li:hover{
 	background-color: rgba( 158, 253, 56, .5 );
 }
+#fbos-list li.active{
+	background-color: rgba( 158, 253, 56, .5 );
+	color: white;
+	text-shadow: 0 1px black;
+}
 #hotspot{
 	position: absolute;
 	left: 0;
@@ -41,19 +44,49 @@ var layerCSS = `
 	pointer-events: none;
 }
 #label{
-	display: block;
-	white-space: nowrap;
-	color: black;
-	padding: 10px;
-	background-color: white;
-	border: 1px solid black;
 	position: absolute;
 	left: 0;
 	bottom: 0;
 	transform-origin: bottom left;
 	pointer-events: none;
 }
+#info{
+	display: none;
+	position: absolute;
+	left: 160px;
+	top: 10px;
+	pointer-events: none;
+}
+.card{
+	display: block;
+	white-space: nowrap;
+	color: black;
+	padding: 10px;
+	background-color: white;
+	border: 1px solid black;
+}
 `;
+
+let formats = {}
+formats[ THREE.AlphaFormat ] = 'THREE.AlphaFormat';
+formats[ THREE.RGBFormat ] = 'THREE.RGBFormat';
+formats[ THREE.RGBAFormat ] = 'THREE.RGBAFormat';
+formats[ THREE.LuminanceFormat ] = 'THREE.LuminanceFormat';
+formats[ THREE.LuminanceAlphaFormat ] = 'THREE.LuminanceAlphaFormat';
+//formats[ THREE.RGBEFormat ] = 'THREE.RGBEFormat';
+
+let types = {}
+types[ THREE.UnsignedByteType ] = 'THREE.UnsignedByteType';
+types[ THREE.ByteType ] = 'THREE.ByteType';
+types[ THREE.ShortType ] = 'THREE.ShortType';
+types[ THREE.UnsignedShortType ] = 'THREE.UnsignedShortType';
+types[ THREE.IntType ] = 'THREE.IntType';
+types[ THREE.UnsignedIntType ] = 'THREE.UnsignedIntType';
+types[ THREE.FloatType ] = 'THREE.FloatType';
+types[ THREE.HalfFloatType ] = 'THREE.HalfFloatType';
+types[ THREE.UnsignedShort4444Type ] = 'THREE.UnsignedShort4444Type';
+types[ THREE.UnsignedShort5551Type ] = 'THREE.UnsignedShort5551Type';
+types[ THREE.UnsignedShort565Type ] = 'THREE.UnsignedShort565Type';
 
 class FBOHelper {
 
@@ -83,7 +116,13 @@ class FBOHelper {
 
 		this.label = document.createElement( 'div' );
 		this.label.setAttribute( 'id', 'label' );
+		this.label.className = 'card';
 		this.hotspot.appendChild( this.label );
+
+		this.info = document.createElement( 'div' );
+		this.info.setAttribute( 'id', 'info' );
+		this.info.className = 'card';
+		document.body.appendChild( this.info );
 
 		this.currentObj = null;
 		this.currentU = 0;
@@ -258,13 +297,16 @@ class FBOHelper {
 			if( quad.visible ) {
 				this.hideAll();
 				quad.visible = true;
-				li.style.backgroundColor = '#9EFD38';
+				li.classList.add( 'active' );
+				this.info.style.display = 'block';
 				this.grid.style.display = 'block';
 				this.grid.style.width = ( width + 2 ) + 'px';
 				this.grid.style.height = ( height + 2 ) + 'px';
 				this.currentObj = fboData;
+				this.info.innerHTML = `Width: ${fbo.width} Height: ${fbo.height}<br/>Format: ${formats[fbo.texture.format]} Type: ${types[fbo.texture.type]}`;
 			} else {
-				li.style.backgroundColor = '#444';
+				this.info.style.display = 'none';
+				li.classList.remove( 'active' );
 				this.grid.style.display = 'none';
 				this.currentObj = null;
 			}
@@ -282,7 +324,7 @@ class FBOHelper {
 
 		this.fbos.forEach( fbo => {
 			fbo.quad.visible = false;
-			fbo.li.style.backgroundColor = '#444';
+			fbo.li.classList.remove( 'active' );
 		} );
 
 	}
@@ -328,11 +370,18 @@ class FBOHelper {
 		types[ THREE.IntType ] = Int32Array;
 		types[ THREE.UnsignedIntType ] = Uint32Array;
 		types[ THREE.FloatType ] = Float32Array;
+		types[ THREE.HalfFloatType ] = null;
 		types[ THREE.UnsignedShort4444Type ] = Uint16Array;
 		types[ THREE.UnsignedShort5551Type ] = Uint16Array;
 		types[ THREE.UnsignedShort565Type ] = Uint16Array;
 
-		const pixelBuffer = new ( types[ fbo.texture.type ] )( 4 );
+		var type = types[ fbo.texture.type ];
+		if( type === null ) {
+			console.warning( fbo.texture.type + ' not supported' );
+			return;
+		}
+
+		const pixelBuffer = new ( type )( 4 );
 
 		renderer.readRenderTargetPixels( fbo, x, y, 1, 1, pixelBuffer );
 		const posTxt = `X : ${x} Y: ${y} u: ${u} v: ${v}`;
