@@ -1,7 +1,7 @@
 # THREE.FBOHelper
 FrameBuffer Object inspector for three.js
 
-# WIP
+# Screenshots
 
 <table>
 <tr>
@@ -41,3 +41,12 @@ helper.attach( buffer, 'Particles', function( d ) {
 ```js
 helper.update();
 ```
+
+Once the helper is working, you can select FBOs to inspect, and drag the viewer around and use the scroll/mousewheel to zoom in and out.
+
+#### License ####
+
+MIT licensed
+
+Copyright (C) 2016 Jaume Sanchez Elias, http://www.clicktorelease.com
+
