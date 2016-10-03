@@ -3,7 +3,8 @@ FrameBuffer Object inspector for three.js
 
 # WIP
 
-![Snapshot](https://raw.githubusercontent.com/spite/THREE.FBOHelper/master/about/snapshot.jpg "Snapshot")
+![Snapshot](https://raw.githubusercontent.com/spite/THREE.FBOHelper/master/about/snapshot1.jpg "Snapshot")
+![Snapshot](https://raw.githubusercontent.com/spite/THREE.FBOHelper/master/about/snapshot2.jpg "Snapshot")
 
 # How to use
 
