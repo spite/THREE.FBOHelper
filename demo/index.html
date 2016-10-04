@@ -90,18 +90,44 @@ float sdSphere( vec3 p, float s ) {
 	return length(p)-s;
 }
 
+float random(vec2 co){
+    return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
+}
+
+float hash( float n )//->0:1
+{
+    return fract(sin(n)*3538.5453);
+}
+const float PI = 3.14159265359;
+
+vec3 randomSphereDir(vec2 rnd)
+{
+	float s = rnd.x*PI*2.;
+	float t = rnd.y*2.-1.;
+	return vec3(sin(s), cos(s), t) / sqrt(1.0 + t * t);
+}
+vec3 randomHemisphereDir(vec3 dir, float i)
+{
+	vec3 v = randomSphereDir( vec2(hash(i+1.), hash(i+2.)) );
+	return v * sign(dot(v, dir));
+}
+
 void main() {
 
 	vec4 c = texture2D( inputTexture, vUv );
 	vec4 p = texture2D( positionTexture, vUv );
 	if( p.a == 0. ) {
 		vec4 o = texture2D( originalTexture, vUv );
-		c.xyz = 100. * normalize( o.xyz );
+		c.xyz = normalize( o.xyz );
 		c.y = 0.;
 	}
 
-	if( ( p.y + c.y ) < -500. ) c.y *= -.75;
-	if( p.y + 500. < .1 ) c.y *= .5;
+	if( ( p.y + c.y ) < -500. ) {
+		vec3 n = vec3( 0., 1., 0. );
+		vec3 i = normalize( c.xyz );
+		float f = .5 * length( c.xyz );
+		c.xyz = f * randomHemisphereDir( reflect( i, n ), hash( length( c ) + time ) );
+	}
 
 	for( int j = 0; j < 20; j++ ) {
 		float r = sphere[ j ].a;
@@ -110,14 +136,14 @@ void main() {
 		if( d >= 1.0 ) {
 			vec3 n = normalize( pp.xyz );
 			vec3 i = normalize( c.xyz );
-			float f = .25 * length( c.xyz );
-			c.xyz = f * reflect( i, n );
+			float f = .5 * length( c.xyz );
+			c.xyz = f * randomHemisphereDir( reflect( i, n ), hash( length( c ) + time ) );
 			c.xyz += sphereVelocities[ j ].xyz;
 		}
 	}
 
-	c.y -= .098;
-	//c *= .99;
+	c.y -= .5 * .098;
+	c *= .99;
 
 	gl_FragColor = c;
 
@@ -140,12 +166,13 @@ void main() {
 	vec4 i = texture2D( infoTexture, vUv );
 	vec4 or = texture2D( originalTexture, vUv );
 	if( c.a == 0. ) {
-		c = or;
+		c = or;// * vec4( .1, 1., .1, 1. );
 	}
 
+	float delta = 1.;
 	vec4 v = texture2D( velocityTexture, vUv );
-	c.xyz += i.x * v.xyz;
-	c.a += i.x;
+	c.xyz += delta * i.x * v.xyz;
+	c.a += delta * i.x;
 	if( c.a > 1000. ) c.a = 0.;
 
 	gl_FragColor = vec4( c );
@@ -178,6 +205,7 @@ varying float vSize;
 varying vec2 vUv;
 varying vec3 vColor;
 varying float life;
+varying float vDistance;
 
 void main() {
 
@@ -186,13 +214,14 @@ void main() {
 	vec4 prev = texture2D( previousPositionTexture, uv );
 	vec3 p = c.xyz;
 	vUv = uv;
+	float delta = 10.;
 	life = 1. - ( c.a / 1000. );
 	if( c.a == 0. ) life = 0.;
 	vColor = mix( vec3( 149., 200., 233. ) / 255., vec3( 24., 113., 169. ) / 255., life );
 	vColor = mix( vec3( 1. ), vColor, clamp( .1 * length( c - prev ), 0., 1. ) );
 
-    float cameraDist = length( p - cameraPosition );
-	vSize = clamp( i.x * 5000. / cameraDist, 2., 100. );//( 100. - c. a ) * 500. / cameraDist;
+    vDistance = length( p - cameraPosition );
+	vSize = clamp( i.x * 5000. / vDistance, 2., 100. );
 	gl_PointSize = vSize;
 	gl_Position = projectionMatrix * modelViewMatrix * vec4( p, 1. );
 
@@ -207,16 +236,61 @@ varying float vSize;
 varying vec2 vUv;
 varying vec3 vColor;
 varying float life;
+varying float vDistance;
 
 void main() {
 
 	if( vSize == 0. ) discard;
-	float d = smoothstep( .5, .55, 1. - length( gl_PointCoord - .5 ) );
+	float d1 = smoothstep( .5, .55, 1. - length( gl_PointCoord - .5 ) );
+	float d2 = smoothstep( .5, 1., 1. - length( gl_PointCoord - .5 ) );
+	float d = mix( d2, d1, vDistance / 1000. );
 	if( d == 0. ) discard;
-	gl_FragColor = vec4( vColor, d * life );
+	gl_FragColor = vec4( vColor, d  * life );
 
 }
 
+</script>
+
+<script id="object-vs" type="x-shader/x-fragment" >
+precision highp float;
+
+attribute vec3 position;
+attribute vec3 normal;
+
+uniform mat4 modelViewMatrix;
+uniform mat4 projectionMatrix;
+uniform mat3 normalMatrix;
+
+varying vec3 vPosition;
+varying vec3 vNormal;
+
+void main() {
+
+	vec4 pos = modelViewMatrix * vec4( position, 1.0 );
+	vPosition = pos.xyz;
+	vNormal = normalMatrix * normal;
+
+	gl_Position = projectionMatrix * pos;
+
+}
+</script>
+
+<script id="object-fs" type="x-shader/x-fragment" >
+precision highp float;
+
+varying vec3 vPosition;
+varying vec3 vNormal;
+
+void main() {
+
+	float rim = max( 0., abs( dot( normalize( vNormal ), normalize( -vPosition ) ) ) );
+	float r = .1 * smoothstep( .25, .75, 1. - rim );
+	vec3 c = vec3( 149., 200., 233. ) / 255.;
+
+	float h = ( vPosition.y + 500. ) / 2000.;
+	gl_FragColor = vec4( c * ( r * h ), 1. );
+
+}
 </script>
 
 <script>
@@ -232,7 +306,7 @@ var camera, controls, geometry,
 	sphere;
 var positionSim, velocitySim;
 var spheres = [], sphereMesh = [], sphereObject = new THREE.Object3D();
-var floor;
+var floor, world;
 
 var container = document.getElementById( 'container' );
 
@@ -294,9 +368,12 @@ function init() {
 
 	camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 10000 );
 	camera.target = new THREE.Vector3( 0, 0, 0 );
-	camera.position.z = 1000;
-	camera.position.y = 1000;
+	camera.position.set( -573.2129761886051, -319.17158861924224, -212.626789135172 );
+	//camera.position.set( -386.9360624668476, 592.0399594581557, -163.735637229391 );
 	scene.add( camera );
+
+	world = new THREE.Object3D();
+	scene.add( world );
 
 	renderer = new THREE.WebGLRenderer( { antialias: true } );
 	renderer.setPixelRatio( window.devicePixelRatio );
@@ -310,14 +387,18 @@ function init() {
 	onWindowResized();
 
 	var light = new THREE.HemisphereLight( 0xffffbb, 0x080820, 1 );
-	scene.add( light );
+	world.add( light );
 
-	var material = new THREE.MeshStandardMaterial( { roughness: .5, metalness: .2 } );
+	var material = new THREE.RawShaderMaterial( {
+		vertexShader: document.getElementById( 'object-vs' ).textContent,
+		fragmentShader: document.getElementById( 'object-fs' ).textContent,
+	});
+//	var material = new THREE.MeshStandardMaterial( { roughness: .5, metalness: .2 } );
 
 	floor = new THREE.Mesh( new THREE.BoxBufferGeometry( 2000, 2000, 10 ), material );
 	floor.position.y = -505;
 	floor.rotation.x = Math.PI / 2;
-	//scene.add( floor );
+	//world.add( floor );
 
 	controls = new THREE.OrbitControls( camera, renderer.domElement );
 
@@ -328,9 +409,15 @@ function init() {
 	for( var y = 0; y < height; y++ ) {
 		for( var x = 0; x < width; x++ ) {
 
-			var px = Maf.randomInRange( -40, 40 );
-			var pz = Maf.randomInRange( -40, 40 );
-
+			var a = Maf.randomInRange( 0, 1 );
+			var b = Maf.randomInRange( 0, 1 );
+			if( a > b ) {
+				var tmp = b;
+				b = a;
+				a = tmp;
+			}
+			var px = b * 400 * Math.cos( 2 * Math.PI * a / b );
+			var pz = b * 400 * Math.sin( 2 * Math.PI * a / b );
 
 			data[ ptr ] = px
 			data[ ptr + 1 ] = Maf.randomInRange( 1400, 1500 );
@@ -360,7 +447,13 @@ function init() {
 		var y = Maf.randomInRange( -400, 400 );
 		var z = Maf.randomInRange( -400, 400 );
 
-		spheres.push( new THREE.Vector4( x, y, z, r ) );
+		spheres.push( {
+			origin: new THREE.Vector3( x, y, z ),
+			radius: r,
+			orbit: Maf.randomInRange( 50, 100 ),
+			speed: Maf.randomInRange( 1, 2 ),
+			beat: Maf.randomInRange( 1, 2 )
+		} );
 		uniformSpheres.push( new THREE.Vector4( 0, 0, 0, 0 ) );
 		uniformSpheresVelocities.push( new THREE.Vector4( 0, 0, 0, 0 ) );
 		var s = new THREE.Mesh( new THREE.IcosahedronGeometry( 1, 3 ), material );
@@ -368,7 +461,7 @@ function init() {
 		sphereObject.add( s );
 		sphereMesh.push( s );
 	}
-	//scene.add( sphereObject );
+	world.add( sphereObject );
 
 	var velocityShader = new THREE.RawShaderMaterial( {
 		uniforms:{
@@ -449,7 +542,7 @@ function init() {
 
 	particleSystem = new THREE.Points( particleGeometry, particleMaterial );
 
-	scene.add( particleSystem );
+	world.add( particleSystem );
 
 	animate();
 
@@ -496,10 +589,10 @@ function render() {
 			var r = 400;
 			tmpVector.copy( velocitySim.shader.uniforms.sphere.value[ i ] );
 			velocitySim.shader.uniforms.sphere.value[ i ].set(
-				s.x + r * Math.cos( time ),
-				s.y,
-				s.z + r * Math.sin( time ),
-				s.w
+				s.origin.x + s.orbit * Math.cos( s.speed * time ),
+				s.origin.y,
+				s.origin.z + s.orbit * Math.sin( s.speed * time ),
+				s.radius * ( .75 + .25 * Math.cos( .1 * s.beat * time ) )
 			);
 
 			velocitySim.shader.uniforms.sphereVelocities.value[ i ].copy( velocitySim.shader.uniforms.sphere.value[ i ] );
@@ -510,6 +603,8 @@ function render() {
 				velocitySim.shader.uniforms.sphere.value[ i ].y,
 				velocitySim.shader.uniforms.sphere.value[ i ].z
 			);
+			var scale = velocitySim.shader.uniforms.sphere.value[ i ].w;
+			sphereMesh[ i ].scale.set( scale, scale, scale );
 
 		} )
 
@@ -522,6 +617,8 @@ function render() {
 		particleMaterial.uniforms.positionTexture.value = positionSim.output;
 		particleMaterial.uniforms.previousPositionTexture.value = positionSim.input;
 		velocitySim.shader.uniforms.positionTexture.value = positionSim.output;
+
+		world.rotation.y = .1 * time;
 
 	}
 
