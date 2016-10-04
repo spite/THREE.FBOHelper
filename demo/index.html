@@ -70,6 +70,7 @@ void main() {
 precision highp float;
 
 uniform sampler2D inputTexture;
+uniform sampler2D infoTexture;
 uniform sampler2D positionTexture;
 uniform sampler2D originalTexture;
 
@@ -81,39 +82,38 @@ uniform mat4 sphereRotationMatrix;
 
 varying vec2 vUv;
 
-float sdTorus( vec3 p, vec2 t ) {
-	vec2 q = vec2(length(p.xz)-t.x,p.y);
-	return length(q)-t.y;
-}
-
-float sdSphere( vec3 p, float s ) {
-	return length(p)-s;
-}
-
-float random(vec2 co){
-    return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
-}
-
-float hash( float n )//->0:1
-{
-    return fract(sin(n)*3538.5453);
-}
 const float PI = 3.14159265359;
 
-vec3 randomSphereDir(vec2 rnd)
-{
+float random(vec2 co){
+
+    return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
+
+}
+
+float hash( float n ) { // 0 - 1
+
+    return fract(sin(n)*3538.5453);
+
+}
+
+vec3 randomSphereDir(vec2 rnd) {
+
 	float s = rnd.x*PI*2.;
 	float t = rnd.y*2.-1.;
 	return vec3(sin(s), cos(s), t) / sqrt(1.0 + t * t);
+
 }
-vec3 randomHemisphereDir(vec3 dir, float i)
-{
+
+vec3 randomHemisphereDir(vec3 dir, float i) {
+
 	vec3 v = randomSphereDir( vec2(hash(i+1.), hash(i+2.)) );
 	return v * sign(dot(v, dir));
+
 }
 
 void main() {
 
+	vec4 info = texture2D( infoTexture, vUv );
 	vec4 c = texture2D( inputTexture, vUv );
 	vec4 p = texture2D( positionTexture, vUv );
 	if( p.a == 0. ) {
@@ -138,12 +138,13 @@ void main() {
 			vec3 n = normalize( pp.xyz );
 			vec3 i = normalize( c.xyz );
 			float f = .5 * length( c.xyz );
-			c.xyz = f * randomHemisphereDir( reflect( i, n ), hash( length( c ) + time ) );
+			vec3 r = reflect( i, n );
+			c.xyz = f * randomHemisphereDir( r, hash( length( c ) + time ) );
 			c.xyz += sphereVelocities[ j ].xyz;
 		}
 	}
 
-	c.y -= .5 * .098;
+	c.y -= .5 * info.x * .098;
 	c *= .99;
 
 	gl_FragColor = c;
@@ -223,7 +224,7 @@ void main() {
 	vColor = mix( vec3( 1. ), vColor, clamp( .1 * length( c - prev ), 0., 1. ) );
 
     vDistance = length( ( modelMatrix * vec4( p, 1. ) ).xyz - cameraPosition );
-	vSize = clamp( i.x * 5000. / vDistance, 2., 100. );
+	vSize = .5 * clamp( i.x * 5000. / vDistance, 2., 100. );
 	gl_PointSize = vSize;
 	gl_Position = projectionMatrix * modelViewMatrix * vec4( p, 1. );
 
@@ -395,12 +396,6 @@ function init() {
 		vertexShader: document.getElementById( 'object-vs' ).textContent,
 		fragmentShader: document.getElementById( 'object-fs' ).textContent
 	});
-//	var material = new THREE.MeshStandardMaterial( { roughness: .5, metalness: .2 } );
-
-	floor = new THREE.Mesh( new THREE.BoxBufferGeometry( 2000, 2000, 10 ), material );
-	floor.position.y = -505;
-	floor.rotation.x = Math.PI / 2;
-	//world.add( floor );
 
 	controls = new THREE.OrbitControls( camera, renderer.domElement );
 
@@ -422,7 +417,7 @@ function init() {
 			var pz = b * 400 * Math.sin( 2 * Math.PI * a / b );
 
 			data[ ptr ] = px
-			data[ ptr + 1 ] = Maf.randomInRange( 1400, 1500 );
+			data[ ptr + 1 ] = Maf.randomInRange( 1000, 2000 );
 			data[ ptr + 2 ] = pz;
 			data[ ptr + 3 ] = Maf.randomInRange( 1, 499 );
 
@@ -468,6 +463,7 @@ function init() {
 	var velocityShader = new THREE.RawShaderMaterial( {
 		uniforms:{
 			time: { type: 'f', value: 0 },
+			infoTexture: { type: 't', value: texture2 },
 			originalTexture: { type: 't', value: texture },
 			positionTexture: { type: 't', value: texture },
 			inputTexture: { type: 't', value: null },
