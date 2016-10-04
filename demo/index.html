@@ -192,6 +192,8 @@ attribute vec2 uv;
 uniform mat4 modelMatrix;
 uniform mat4 modelViewMatrix;
 uniform mat4 projectionMatrix;
+uniform mat4 prevModelViewMatrix;
+uniform mat4 prevProjectionMatrix;
 
 uniform vec2 dimensions;
 uniform float size;
@@ -206,9 +208,9 @@ uniform vec3 colors[ 9 ];
 
 varying float vSize;
 varying vec2 vUv;
-varying vec3 vColor;
 varying float life;
 varying float vDistance;
+varying vec2 vSpeed;
 
 void main() {
 
@@ -220,13 +222,14 @@ void main() {
 	float delta = 10.;
 	life = 1. - ( c.a / 1000. );
 	if( c.a == 0. ) life = 0.;
-	vColor = mix( vec3( 149., 200., 233. ) / 255., vec3( 24., 113., 169. ) / 255., life );
-	vColor = mix( vec3( 1. ), vColor, clamp( .1 * length( c - prev ), 0., 1. ) );
 
     vDistance = length( ( modelMatrix * vec4( p, 1. ) ).xyz - cameraPosition );
-	vSize = .5 * clamp( i.x * 5000. / vDistance, 2., 100. );
+	vSize = .5 * clamp( i.x * 2000. / vDistance, 2., 100. );
 	gl_PointSize = vSize;
 	gl_Position = projectionMatrix * modelViewMatrix * vec4( p, 1. );
+
+	vSpeed = gl_Position.xy - ( prevProjectionMatrix * prevModelViewMatrix * vec4( prev.xyz, 1. ) ).xy;
+	vSpeed += gl_Position.xy - ( prevProjectionMatrix * prevModelViewMatrix * vec4( p.xyz, 1. ) ).xy;
 
 }
 
@@ -237,19 +240,16 @@ precision highp float;
 
 varying float vSize;
 varying vec2 vUv;
-varying vec3 vColor;
 varying float life;
 varying float vDistance;
+varying vec2 vSpeed;
 
 void main() {
 
 	if( vSize == 0. ) discard;
-	float d1 = smoothstep( .5, .55, 1. - length( gl_PointCoord - .5 ) );
-	float d2 = smoothstep( .5, 1., 1. - length( gl_PointCoord - .5 ) );
-	float d = mix( d2, d1, vDistance / 1000. );
-	//float d = d1;
+	float d = smoothstep( .5, .55, 1. - length( gl_PointCoord - .5 ) );
 	if( d == 0. ) discard;
-	gl_FragColor = vec4( vColor, d * life );
+	gl_FragColor = vec4( .1 * vSpeed, life, d * life );
 
 }
 
@@ -297,6 +297,39 @@ void main() {
 }
 </script>
 
+<script id="final-fs" type="x-shader/x-fragment" >
+precision highp float;
+
+uniform sampler2D motionBuffer;
+uniform vec2 dimensions;
+
+varying vec2 vUv;
+
+void main() {
+
+	vec4 motion = texture2D( motionBuffer, vUv );
+
+	vec2 inc = motion.xy / dimensions;
+
+	vec2 sum = motion.ba;
+	vec2 uv = vUv - 10. * inc;
+	for(int i = 1; i < 20; ++i ) {
+		uv += inc;
+		sum += texture2D( motionBuffer, uv ).ba;
+	}
+	sum /= 20.;
+
+	vec3 color = mix( vec3( 149., 200., 233. ) / 255., vec3( 24., 113., 169. ) / 255., motion.b );
+	float v = clamp( length( motion.xy ), 0., 1. );
+	color = mix( vec3( 1. ), color, v );
+	color *= sum.x;
+
+	gl_FragColor = vec4( color, sum.y );
+
+}
+
+</script>
+
 <script>
 
 'use strict';
@@ -334,6 +367,24 @@ function createFBO( width, height ) {
 	return fbo;
 
 }
+
+function createRenderTarger( width, height ) {
+
+	var rt = new THREE.WebGLRenderTarget( width, height, {
+		wrapS: THREE.ClampToEdgeWrapping,
+		wrapT: THREE.ClampToEdgeWrapping,
+		format: THREE.RGBAFormat,
+		type: THREE.FloatType,
+		stencilBuffer: false,
+		depthBuffer: true
+	});
+
+	return rt;
+
+}
+
+var motionRT = createRenderTarger( 1, 1 ), colorRT = createRenderTarger( 1, 1 );
+var rtScene, rtQuad, rtShader, rtCamera;
 
 var size = window.location.hash.substr( 1 ) || 256;
 var width = size;
@@ -374,6 +425,7 @@ function init() {
 	camera.target = new THREE.Vector3( 0, 0, 0 );
 	camera.position.set( -573.2129761886051, -319.17158861924224, -212.626789135172 );
 	//camera.position.set( -386.9360624668476, 592.0399594581557, -163.735637229391 );
+	camera.position.set( 2.2142345804263397, 860.3191694902855, 1309.7027716556265 );
 	scene.add( camera );
 
 	world = new THREE.Object3D();
@@ -385,9 +437,6 @@ function init() {
 	helper = new THREE.FBOHelper( renderer );
 
 	container.appendChild( renderer.domElement );
-
-	window.addEventListener( 'resize', onWindowResized );
-	onWindowResized();
 
 	var light = new THREE.HemisphereLight( 0xffffbb, 0x080820, 1 );
 	world.add( light );
@@ -458,7 +507,7 @@ function init() {
 		sphereObject.add( s );
 		sphereMesh.push( s );
 	}
-	world.add( sphereObject );
+	//world.add( sphereObject );
 
 	var velocityShader = new THREE.RawShaderMaterial( {
 		uniforms:{
@@ -530,17 +579,41 @@ function init() {
 			positionTexture: { type: 't', value: positionSim.fbos[ 0 ] },
 			previousPositionTexture: { type: 't', value: positionSim.fbos[ 1 ] },
 			dimensions: { type: 'v2', value: dimensions },
-			cameraPosition: { type: 'v3', value: new THREE.Vector3() }
+			cameraPosition: { type: 'v3', value: new THREE.Vector3() },
+			prevModelViewMatrix: { type: 'm4', value: new THREE.Matrix4() },
+			prevProjectionMatrix: { type: 'm4', value: new THREE.Matrix4() }
 		},
 		vertexShader: document.getElementById( 'particle-vs' ).textContent,
 		fragmentShader: document.getElementById( 'particle-fs' ).textContent,
-		transparent: true,
-		depthWrite: false
+		transparent: false,
+		depthTest: true,
+		depthWrite: true
 	} );
 
 	particleSystem = new THREE.Points( particleGeometry, particleMaterial );
 
 	world.add( particleSystem );
+
+	rtShader = new THREE.RawShaderMaterial( {
+		uniforms:{
+			motionBuffer: { type: 't', value: null },
+			dimensions: { type: 'v2', value: new THREE.Vector2( 1, 1 ) }
+		},
+		vertexShader: document.getElementById( 'ortho-vs' ).textContent,
+		fragmentShader: document.getElementById( 'final-fs' ).textContent,
+		depthTest: false,
+		depthWrite: false
+	} );
+
+	rtScene = new THREE.Scene();
+	rtCamera = new THREE.OrthographicCamera( 1 / - 2, 1 / 2, 1 / 2, 1 / - 2, .00001, 1000 );
+	rtQuad = new THREE.Mesh( new THREE.PlaneBufferGeometry( 1, 1 ), rtShader );
+	rtScene.add( rtQuad );
+
+	helper.attach( motionRT, 'Motion' );
+
+	window.addEventListener( 'resize', onWindowResized );
+	onWindowResized();
 
 	animate();
 
@@ -548,11 +621,28 @@ function init() {
 
 function onWindowResized( event ) {
 
-	renderer.setSize( container.clientWidth, container.clientHeight );
-	camera.aspect = container.clientWidth / container.clientHeight;
+	var w = container.clientWidth;
+	var h = container.clientHeight;
+
+	renderer.setSize( w, h );
+	camera.aspect = w / h;
 	camera.updateProjectionMatrix();
 
-	helper.setSize(  container.clientWidth, container.clientHeight );
+	helper.setSize( w, h );
+
+	motionRT.setSize( w, h );
+	colorRT.setSize( w, h );
+
+	rtCamera.left   = - w / 2;
+	rtCamera.right  =   w / 2;
+	rtCamera.top    =   h / 2;
+	rtCamera.bottom = - h / 2;
+
+	rtCamera.updateProjectionMatrix();
+	rtQuad.scale.set( w, h, 1 );
+	rtShader.uniforms.dimensions.value.set( w, h );
+
+	helper.refreshFBO( motionRT );
 
 }
 
@@ -621,7 +711,13 @@ function render() {
 	}
 
 	particleMaterial.uniforms.cameraPosition.value.copy( camera.position );
-	renderer.render( scene, camera );
+	renderer.render( scene, camera, motionRT );
+	rtShader.uniforms.motionBuffer.value = motionRT;
+	renderer.render( rtScene, rtCamera );
+
+	particleMaterial.uniforms.prevModelViewMatrix.value.multiplyMatrices( camera.matrixWorldInverse, particleSystem.matrixWorld );
+	particleMaterial.uniforms.prevProjectionMatrix.value.copy( camera.projectionMatrix );
+
 	helper.update();
 
 	lastTime = performance.now();
