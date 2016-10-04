@@ -71,6 +71,7 @@
 		<script src="js/isMobile.min.js"></script>
 		<script src="js/OrbitControls.js"></script>
 		<script src="js/Maf.js"></script>
+		<script src="js/dat.gui.min.js"></script>
 
 		<script>
 		window.onhashchange = function() { window.location.reload() }
@@ -399,6 +400,14 @@ var floor, world;
 
 var container = document.getElementById( 'container' );
 
+var Params = function() {
+	this.bounce = .5;
+	this.friction = .99;
+	this.gravity = .1;
+	this.spread = 1.;
+};
+var params = new Params();
+
 window.addEventListener( 'load', init );
 
 function createFBO( width, height ) {
@@ -671,6 +680,12 @@ function init() {
 
 	helper.attach( motionRT, 'Motion', function( i ) { return 'Speed: (' + i.r + ', ' + i.g + ')<br/>Life: ' + i.b + ' dLife: ' + i.a } );
 
+	var gui = new dat.GUI();
+	gui.add( params, "bounce", 0, 1 );
+	gui.add( params, "friction", 0, 1 );
+	gui.add( params, "gravity", 0, 1 );
+	gui.add( params, "spread", 0, 2 );
+
 	window.addEventListener( 'resize', onWindowResized );
 	onWindowResized();
 
@@ -726,6 +741,11 @@ var lastTime = 0;
 var tmpVector = new THREE.Vector4();
 
 function render() {
+
+	velocitySim.shader.uniforms.bounce.value = params.bounce;
+	velocitySim.shader.uniforms.friction.value = params.friction;
+	velocitySim.shader.uniforms.gravity.value = params.gravity;
+	positionSim.shader.uniforms.spread.value = params.spread;
 
 	if( runAnimation ) {
 
