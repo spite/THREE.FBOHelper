@@ -80,6 +80,10 @@ uniform vec4 sphere[ 20 ];
 uniform vec4 sphereVelocities[ 20 ];
 uniform mat4 sphereRotationMatrix;
 
+uniform float bounce;
+uniform float friction;
+uniform float gravity;
+
 varying vec2 vUv;
 
 const float PI = 3.14159265359;
@@ -125,9 +129,9 @@ void main() {
 	if( ( p.y + c.y ) < -500. ) {
 		vec3 n = vec3( 0., 1., 0. );
 		vec3 i = normalize( c.xyz );
-		float f = .95 * length( c.xyz );
+		float f = length( c.xyz );
 		c.xyz = f * randomHemisphereDir( reflect( i, n ), hash( length( c ) + time ) );
-		c.xz *= .9;
+		c.xz *= bounce;
 	}
 
 	for( int j = 0; j < 20; j++ ) {
@@ -137,15 +141,16 @@ void main() {
 		if( d >= 1.0 ) {
 			vec3 n = normalize( pp.xyz );
 			vec3 i = normalize( c.xyz );
-			float f = .5 * length( c.xyz );
+			float f = length( c.xyz );
 			vec3 r = reflect( i, n );
 			c.xyz = f * randomHemisphereDir( r, hash( length( c ) + time ) );
+			c *= bounce;
 			c.xyz += sphereVelocities[ j ].xyz;
 		}
 	}
 
-	c.y -= .5 * info.x * .098;
-	c *= .99;
+	c.y -= info.x * gravity;
+	c *= friction;
 
 	gl_FragColor = c;
 
@@ -160,6 +165,8 @@ uniform sampler2D infoTexture;
 uniform sampler2D inputTexture;
 uniform sampler2D velocityTexture;
 
+uniform float spread;
+
 varying vec2 vUv;
 
 void main() {
@@ -168,7 +175,7 @@ void main() {
 	vec4 i = texture2D( infoTexture, vUv );
 	vec4 or = texture2D( originalTexture, vUv );
 	if( c.a == 0. ) {
-		c = or;// * vec4( .1, 1., .1, 1. );
+		c = or * vec4( spread, 1., spread, 1. );
 	}
 
 	float delta = 1.;
@@ -224,7 +231,7 @@ void main() {
 	if( c.a == 0. ) life = 0.;
 
     vDistance = length( ( modelMatrix * vec4( p, 1. ) ).xyz - cameraPosition );
-	vSize = .5 * clamp( i.x * 2000. / vDistance, 2., 100. );
+	vSize = .25 * clamp( i.x * 2000. / vDistance, 2., 100. );
 	gl_PointSize = vSize;
 	gl_Position = projectionMatrix * modelViewMatrix * vec4( p, 1. );
 
@@ -302,8 +309,13 @@ precision highp float;
 
 uniform sampler2D motionBuffer;
 uniform vec2 dimensions;
+uniform float time;
 
 varying vec2 vUv;
+
+float random(vec2 n, float offset ){
+	return .5 - fract(sin(dot(n.xy + vec2( offset, 0. ), vec2(12.9898, 78.233)))* 43758.5453);
+}
 
 void main() {
 
@@ -315,6 +327,7 @@ void main() {
 	vec2 uv = vUv - 10. * inc;
 	for(int i = 1; i < 20; ++i ) {
 		uv += inc;
+		uv += .0001 * vec2( random( uv.xy, .0001 * time ), random( uv.yx, .00011 * time ) );
 		sum += texture2D( motionBuffer, uv ).ba;
 	}
 	sum /= 20.;
@@ -323,6 +336,16 @@ void main() {
 	float v = clamp( length( motion.xy ), 0., 1. );
 	color = mix( vec3( 1. ), color, v );
 	color *= sum.x;
+
+	color += vec3( .25 * random( vUv, .00001 * time ) );
+
+	float boost = 1.4;
+	float reduction = 1.;
+	vec2 center = vec2( 0.5 );
+	float vignette = length( vUv - .5 );
+   	vignette = boost - vignette * reduction;
+
+    color *= vignette;
 
 	gl_FragColor = vec4( color, sum.y );
 
@@ -425,13 +448,13 @@ function init() {
 	camera.target = new THREE.Vector3( 0, 0, 0 );
 	camera.position.set( -573.2129761886051, -319.17158861924224, -212.626789135172 );
 	//camera.position.set( -386.9360624668476, 592.0399594581557, -163.735637229391 );
-	camera.position.set( 2.2142345804263397, 860.3191694902855, 1309.7027716556265 );
+	//camera.position.set( 2.2142345804263397, 860.3191694902855, 1309.7027716556265 );
 	scene.add( camera );
 
 	world = new THREE.Object3D();
 	scene.add( world );
 
-	renderer = new THREE.WebGLRenderer( { antialias: false } );
+	renderer = new THREE.WebGLRenderer( { antialias: true, alpha: false } );
 	renderer.setPixelRatio( window.devicePixelRatio );
 
 	helper = new THREE.FBOHelper( renderer );
@@ -507,11 +530,14 @@ function init() {
 		sphereObject.add( s );
 		sphereMesh.push( s );
 	}
-	//world.add( sphereObject );
+	world.add( sphereObject );
 
 	var velocityShader = new THREE.RawShaderMaterial( {
 		uniforms:{
 			time: { type: 'f', value: 0 },
+			bounce: { type: 'f', value: .5 },
+			friction: { type: 'f', value: .99 },
+			gravity: { type: 'f', value: .1 },
 			infoTexture: { type: 't', value: texture2 },
 			originalTexture: { type: 't', value: texture },
 			positionTexture: { type: 't', value: texture },
@@ -533,6 +559,7 @@ function init() {
 
 	var positionShader = new THREE.RawShaderMaterial( {
 		uniforms:{
+			spread: { type: 'f', value: 1. },
 			originalTexture: { type: 't', value: texture },
 			infoTexture: { type: 't', value: texture2 },
 			inputTexture: { type: 't', value: null },
@@ -596,6 +623,7 @@ function init() {
 
 	rtShader = new THREE.RawShaderMaterial( {
 		uniforms:{
+			time: { type: 'f', value: 0 },
 			motionBuffer: { type: 't', value: null },
 			dimensions: { type: 'v2', value: new THREE.Vector2( 1, 1 ) }
 		},
@@ -712,6 +740,7 @@ function render() {
 
 	particleMaterial.uniforms.cameraPosition.value.copy( camera.position );
 	renderer.render( scene, camera, motionRT );
+	rtShader.uniforms.time.value = time;
 	rtShader.uniforms.motionBuffer.value = motionRT;
 	renderer.render( rtScene, rtCamera );
 
