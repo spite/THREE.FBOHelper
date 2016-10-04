@@ -210,33 +210,34 @@ uniform sampler2D infoTexture;
 uniform sampler2D originalTexture;
 uniform sampler2D positionTexture;
 uniform sampler2D previousPositionTexture;
+uniform sampler2D velocityTexture;
 
 uniform vec3 colors[ 9 ];
 
-varying float vSize;
 varying vec2 vUv;
 varying float life;
-varying float vDistance;
 varying vec2 vSpeed;
 
 void main() {
 
 	vec4 i = texture2D( infoTexture, uv );
 	vec4 c = texture2D( positionTexture, uv );
-	vec4 prev = texture2D( previousPositionTexture, uv );
 	vec3 p = c.xyz;
 	vUv = uv;
 	float delta = 10.;
 	life = 1. - ( c.a / 1000. );
 	if( c.a == 0. ) life = 0.;
 
-    vDistance = length( ( modelMatrix * vec4( p, 1. ) ).xyz - cameraPosition );
-	vSize = .25 * clamp( i.x * 2000. / vDistance, 2., 100. );
-	gl_PointSize = vSize;
-	gl_Position = projectionMatrix * modelViewMatrix * vec4( p, 1. );
+	vec4 mvPosition = modelViewMatrix * vec4( p, 1. );
+    gl_PointSize = i.x * ( 600.0 / length( mvPosition.xyz ) );
+	gl_Position = projectionMatrix * mvPosition;
 
+/*	vec4 prev = texture2D( previousPositionTexture, uv );
 	vSpeed = gl_Position.xy - ( prevProjectionMatrix * prevModelViewMatrix * vec4( prev.xyz, 1. ) ).xy;
-	vSpeed += gl_Position.xy - ( prevProjectionMatrix * prevModelViewMatrix * vec4( p.xyz, 1. ) ).xy;
+	vSpeed += gl_Position.xy - ( prevProjectionMatrix * prevModelViewMatrix * vec4( p.xyz, 1. ) ).xy;*/
+
+	vec4 v = texture2D( velocityTexture, uv );
+	vSpeed = ( projectionMatrix  * vec4( v.xyz, 1. ) ).xy;
 
 }
 
@@ -248,12 +249,10 @@ precision highp float;
 varying float vSize;
 varying vec2 vUv;
 varying float life;
-varying float vDistance;
 varying vec2 vSpeed;
 
 void main() {
 
-	if( vSize == 0. ) discard;
 	float d = smoothstep( .5, .55, 1. - length( gl_PointCoord - .5 ) );
 	if( d == 0. ) discard;
 	gl_FragColor = vec4( .1 * vSpeed, life, d * life );
@@ -401,6 +400,7 @@ function createRenderTarger( width, height ) {
 		stencilBuffer: false,
 		depthBuffer: true
 	});
+	rt.flipY = true;
 
 	return rt;
 
@@ -444,7 +444,7 @@ function init() {
 
 	scene = new THREE.Scene();
 
-	camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 10000 );
+	camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, .01, 10000 );
 	camera.target = new THREE.Vector3( 0, 0, 0 );
 	camera.position.set( -573.2129761886051, -319.17158861924224, -212.626789135172 );
 	//camera.position.set( -386.9360624668476, 592.0399594581557, -163.735637229391 );
@@ -605,6 +605,7 @@ function init() {
 			infoTexture: { type: 't', value: texture2 },
 			positionTexture: { type: 't', value: positionSim.fbos[ 0 ] },
 			previousPositionTexture: { type: 't', value: positionSim.fbos[ 1 ] },
+			velocityTexture: { type: 't', value: velocitySim.fbos[ 1 ] },
 			dimensions: { type: 'v2', value: dimensions },
 			cameraPosition: { type: 'v3', value: new THREE.Vector3() },
 			prevModelViewMatrix: { type: 'm4', value: new THREE.Matrix4() },
@@ -732,6 +733,7 @@ function render() {
 		positionSim.render();
 		particleMaterial.uniforms.positionTexture.value = positionSim.output;
 		particleMaterial.uniforms.previousPositionTexture.value = positionSim.input;
+		particleMaterial.uniforms.velocityTexture.value = velocitySim.output;
 		velocitySim.shader.uniforms.positionTexture.value = positionSim.output;
 
 		world.rotation.y = .1 * time;
