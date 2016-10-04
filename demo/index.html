@@ -42,6 +42,9 @@
 		<div id="container"></div>
 
 		<script src="js/three.js"></script>
+		<script src="js/WebVR.js"></script>
+		<script src="js/VREffect.js"></script>
+		<script src="js/VRControls.js"></script>
 		<script src="../src/THREE.FBOHelper.js"></script>
 		<script src="js/OrbitControls.js"></script>
 		<script src="js/Maf.js"></script>
@@ -122,11 +125,11 @@ void main() {
 	vec4 p = texture2D( positionTexture, vUv );
 	if( p.a == 0. ) {
 		vec4 o = texture2D( originalTexture, vUv );
-		c.xyz = normalize( o.xyz );
+		//c.xyz = normalize( o.xyz );
 		c.y = 0.;
 	}
 
-	if( ( p.y + c.y ) < -500. ) {
+	if( ( p.y + c.y ) < -5. ) {
 		vec3 n = vec3( 0., 1., 0. );
 		vec3 i = normalize( c.xyz );
 		float f = length( c.xyz );
@@ -149,7 +152,7 @@ void main() {
 		}
 	}
 
-	c.y -= info.x * gravity;
+	c.y -= info.x * gravity / 1000.;
 	c *= friction;
 
 	gl_FragColor = c;
@@ -175,7 +178,7 @@ void main() {
 	vec4 i = texture2D( infoTexture, vUv );
 	vec4 or = texture2D( originalTexture, vUv );
 	if( c.a == 0. ) {
-		c = or * vec4( spread, 1., spread, 1. );
+		c = or;//vec4( 0. );//or * vec4( spread, 1., spread, 1. );
 	}
 
 	float delta = 1.;
@@ -212,8 +215,6 @@ uniform sampler2D positionTexture;
 uniform sampler2D previousPositionTexture;
 uniform sampler2D velocityTexture;
 
-uniform vec3 colors[ 9 ];
-
 varying vec2 vUv;
 varying float life;
 varying vec2 vSpeed;
@@ -229,7 +230,7 @@ void main() {
 	if( c.a == 0. ) life = 0.;
 
 	vec4 mvPosition = modelViewMatrix * vec4( p, 1. );
-    gl_PointSize = i.x * ( 600.0 / length( mvPosition.xyz ) );
+    gl_PointSize = i.x * ( 6.0 / length( mvPosition.xyz ) );
 	gl_Position = projectionMatrix * mvPosition;
 
 /*	vec4 prev = texture2D( previousPositionTexture, uv );
@@ -255,7 +256,7 @@ void main() {
 
 	float d = smoothstep( .5, .55, 1. - length( gl_PointCoord - .5 ) );
 	if( d == 0. ) discard;
-	gl_FragColor = vec4( .1 * vSpeed, life, d * life );
+	gl_FragColor = vec4( vSpeed, life, d * life );
 
 }
 
@@ -297,7 +298,7 @@ void main() {
 	float r = .1 * smoothstep( .25, .75, 1. - rim );
 	vec3 c = vec3( 149., 200., 233. ) / 255.;
 
-	float h = ( vPosition.y + 500. ) / 2000.;
+	float h = ( vPosition.y + 5. ) / 20.;
 	gl_FragColor = vec4( c * ( r * h ), 1. );
 
 }
@@ -336,7 +337,7 @@ void main() {
 	color = mix( vec3( 1. ), color, v );
 	color *= sum.x;
 
-	color += vec3( .25 * random( vUv, .00001 * time ) );
+	/*color += vec3( .25 * random( vUv, .00001 * time ) );
 
 	float boost = 1.4;
 	float reduction = 1.;
@@ -344,7 +345,7 @@ void main() {
 	float vignette = length( vUv - .5 );
    	vignette = boost - vignette * reduction;
 
-    color *= vignette;
+    color *= vignette;*/
 
 	gl_FragColor = vec4( color, sum.y );
 
@@ -356,7 +357,7 @@ void main() {
 
 'use strict';
 
-var camera, controls, geometry,
+var camera, effect, controls, geometry,
 	scene, material,
 	particleGeometry, particleMaterial, particleSystem,
 	renderer,
@@ -406,7 +407,7 @@ function createRenderTarger( width, height ) {
 
 }
 
-var motionRT = createRenderTarger( 1, 1 ), colorRT = createRenderTarger( 1, 1 );
+var motionRT = createRenderTarger( 1, 1 );
 var rtScene, rtQuad, rtShader, rtCamera;
 
 var size = window.location.hash.substr( 1 ) || 256;
@@ -446,7 +447,7 @@ function init() {
 
 	camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, .01, 10000 );
 	camera.target = new THREE.Vector3( 0, 0, 0 );
-	camera.position.set( -573.2129761886051, -319.17158861924224, -212.626789135172 );
+	camera.position.set( -5.732129761886051, -3.1917158861924224, -2.12626789135172 );
 	//camera.position.set( -386.9360624668476, 592.0399594581557, -163.735637229391 );
 	//camera.position.set( 2.2142345804263397, 860.3191694902855, 1309.7027716556265 );
 	scene.add( camera );
@@ -454,7 +455,7 @@ function init() {
 	world = new THREE.Object3D();
 	scene.add( world );
 
-	renderer = new THREE.WebGLRenderer( { antialias: true, alpha: false } );
+	renderer = new THREE.WebGLRenderer( { antialias: false, alpha: false } );
 	renderer.setPixelRatio( window.devicePixelRatio );
 
 	helper = new THREE.FBOHelper( renderer );
@@ -469,7 +470,21 @@ function init() {
 		fragmentShader: document.getElementById( 'object-fs' ).textContent
 	});
 
-	controls = new THREE.OrbitControls( camera, renderer.domElement );
+	//controls = new THREE.OrbitControls( camera, renderer.domElement );
+
+	controls = new THREE.VRControls( camera );
+	effect = new THREE.VREffect( renderer );
+	if ( navigator.getVRDisplays ) {
+		navigator.getVRDisplays()
+			.then( function ( displays ) {
+				effect.setVRDisplay( displays[ 0 ] );
+				controls.setVRDisplay( displays[ 0 ] );
+			} )
+			.catch( function () {
+				// no displays
+			} );
+		document.body.appendChild( WEBVR.getButton( effect ) );
+	}
 
 	var ptr = 0;
 	var data = new Float32Array( width * height * 4 );
@@ -485,11 +500,11 @@ function init() {
 				b = a;
 				a = tmp;
 			}
-			var px = b * 400 * Math.cos( 2 * Math.PI * a / b );
-			var pz = b * 400 * Math.sin( 2 * Math.PI * a / b );
+			var px = b * 4 * Math.cos( 2 * Math.PI * a / b );
+			var pz = b * 4 * Math.sin( 2 * Math.PI * a / b );
 
 			data[ ptr ] = px
-			data[ ptr + 1 ] = Maf.randomInRange( 1000, 2000 );
+			data[ ptr + 1 ] = Maf.randomInRange( 10, 20 );
 			data[ ptr + 2 ] = pz;
 			data[ ptr + 3 ] = Maf.randomInRange( 1, 499 );
 
@@ -511,15 +526,15 @@ function init() {
 	var uniformSpheres = [];
 	var uniformSpheresVelocities = [];
 	for( var j = 0; j < 20; j++ ) {
-		var r = Maf.randomInRange( 100, 200 );
-		var x = Maf.randomInRange( -400, 400 );
-		var y = Maf.randomInRange( -400, 400 );
-		var z = Maf.randomInRange( -400, 400 );
+		var r = Maf.randomInRange( 1, 2 );
+		var x = Maf.randomInRange( -4, 4 );
+		var y = Maf.randomInRange( -4, 4 );
+		var z = Maf.randomInRange( -4, 4 );
 
 		spheres.push( {
 			origin: new THREE.Vector3( x, y, z ),
 			radius: r,
-			orbit: Maf.randomInRange( 50, 100 ),
+			orbit: Maf.randomInRange( .5, 1 ),
 			speed: Maf.randomInRange( 1, 2 ),
 			beat: Maf.randomInRange( 1, 2 )
 		} );
@@ -586,8 +601,8 @@ function init() {
 	for ( var i = 0, i3 = 0, i2 = 0; i < particles; i ++, i3 += 3, i2 += 2 ) {
 
 		positions[ i3 + 0 ] = Maf.randomInRange( 1, 2 );
-		positions[ i3 + 1 ] = Maf.randomInRange( -100, 100 );
-		positions[ i3 + 2 ] = Maf.randomInRange( -100, 100 );
+		positions[ i3 + 1 ] = Maf.randomInRange( -1, 1 );
+		positions[ i3 + 2 ] = Maf.randomInRange( -1, 1 );
 
 		var x = ( i % dimensions.x ) / dimensions.x;
 		var y = Math.floor( i / dimensions.x ) % dimensions.y / dimensions.y;
@@ -619,7 +634,7 @@ function init() {
 	} );
 
 	particleSystem = new THREE.Points( particleGeometry, particleMaterial );
-
+	particleSystem.frustumCulled = false;
 	world.add( particleSystem );
 
 	rtShader = new THREE.RawShaderMaterial( {
@@ -653,14 +668,13 @@ function onWindowResized( event ) {
 	var w = container.clientWidth;
 	var h = container.clientHeight;
 
-	renderer.setSize( w, h );
+	//renderer.setSize( w, h );
 	camera.aspect = w / h;
 	camera.updateProjectionMatrix();
 
 	helper.setSize( w, h );
 
 	motionRT.setSize( w, h );
-	colorRT.setSize( w, h );
 
 	rtCamera.left   = - w / 2;
 	rtCamera.right  =   w / 2;
@@ -673,13 +687,15 @@ function onWindowResized( event ) {
 
 	helper.refreshFBO( motionRT );
 
+	effect.setSize( w, h );
+
 }
 
 function animate() {
 
 	controls.update();
 
-	requestAnimationFrame( animate );
+	effect.requestAnimationFrame( animate );
 	render();
 
 }
@@ -695,6 +711,29 @@ var time = 0;
 var lastTime = 0;
 var tmpVector = new THREE.Vector4();
 
+function renderEye( scene, camera, renderTarget, forceClear, rect ) {
+	var w = rect.width, h = rect.height;
+	if( motionRT.width != w || motionRT.height != h ) {
+		rtCamera.left   = - w / 2;
+		rtCamera.right  =   w / 2;
+		rtCamera.top    =   h / 2;
+		rtCamera.bottom = - h / 2;
+
+		rtCamera.updateProjectionMatrix();
+		rtQuad.scale.set( w, h, 1 );
+		rtShader.uniforms.dimensions.value.set( w, h );
+
+		motionRT.setSize( w, h );
+
+		helper.refreshFBO( motionRT );
+	}
+	particleMaterial.uniforms.cameraPosition.value.copy( camera.position );
+	renderer.render( scene, camera, motionRT );
+	rtShader.uniforms.time.value = time;
+	rtShader.uniforms.motionBuffer.value = motionRT;
+	renderer.render( rtScene, rtCamera );
+}
+
 function render() {
 
 	if( runAnimation ) {
@@ -703,7 +742,6 @@ function render() {
 
 		spheres.forEach( function( s, i ) {
 
-			var r = 400;
 			tmpVector.copy( velocitySim.shader.uniforms.sphere.value[ i ] );
 			velocitySim.shader.uniforms.sphere.value[ i ].set(
 				s.origin.x + s.orbit * Math.cos( s.speed * time ),
@@ -740,11 +778,7 @@ function render() {
 
 	}
 
-	particleMaterial.uniforms.cameraPosition.value.copy( camera.position );
-	renderer.render( scene, camera, motionRT );
-	rtShader.uniforms.time.value = time;
-	rtShader.uniforms.motionBuffer.value = motionRT;
-	renderer.render( rtScene, rtCamera );
+	effect.render( scene, camera, null, null, renderEye, renderEye );
 
 	particleMaterial.uniforms.prevModelViewMatrix.value.multiplyMatrices( camera.matrixWorldInverse, particleSystem.matrixWorld );
 	particleMaterial.uniforms.prevProjectionMatrix.value.copy( camera.projectionMatrix );
