@@ -41,6 +41,11 @@
 
 		<div id="container"></div>
 
+		<div id="info">
+			<h1>Demo for THREE.FBOHelper</h1>
+			<p>Click the FBO buttons on the top left, you can drag the viewer, zoom in and out with scroll, and hover to see the values in the FBO.</p>
+		</div>
+
 		<script src="js/three.js"></script>
 		<script src="../src/THREE.FBOHelper.js"></script>
 		<script src="js/OrbitControls.js"></script>
@@ -639,7 +644,7 @@ function init() {
 	rtQuad = new THREE.Mesh( new THREE.PlaneBufferGeometry( 1, 1 ), rtShader );
 	rtScene.add( rtQuad );
 
-	helper.attach( motionRT, 'Motion' );
+	helper.attach( motionRT, 'Motion', function( i ) { return 'Speed: (' + i.r + ', ' + i.g + ')<br/>Life: ' + i.b + ' dLife: ' + i.a } );
 
 	window.addEventListener( 'resize', onWindowResized );
 	onWindowResized();
