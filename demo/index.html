@@ -60,14 +60,20 @@
 		<div id="info">
 			<h1>Demo for THREE.FBOHelper · <a href="https://github.com/spite/THREE.FBOHelper" >GitHub</a></h1>
 			<p>FrameBuffer Object inspector for three.js</p>
+			<p>Number of particles: <a href="#128" >Mobile</a> <a href="#512" >Normal</a> <a href="#1024" >More!</a> <a href="#2048" >MOAR!</a></p>
 			<p>Click the FBO buttons on the top left.<br/>You can drag the viewer, zoom in and out with scroll.<br/>Hover to see the values in the FBO.</p>
 			<p><a href="https://twitter.com/thespite" >@thespite</a> · <a href="https://clicktorelease.com" >clicktorelease.com</a>
 		</div>
 
 		<script src="js/three.js"></script>
 		<script src="../src/THREE.FBOHelper.js"></script>
+		<script src="js/isMobile.min.js"></script>
 		<script src="js/OrbitControls.js"></script>
 		<script src="js/Maf.js"></script>
+
+		<script>
+		window.onhashchange = function() { window.location.reload() }
+		</script>
 
 
 <script id="ortho-vs" type="x-shader/x-vertex" >
@@ -419,7 +425,7 @@ function createRenderTarger( width, height ) {
 		wrapS: THREE.ClampToEdgeWrapping,
 		wrapT: THREE.ClampToEdgeWrapping,
 		format: THREE.RGBAFormat,
-		type: THREE.FloatType,
+		type: isMobile.any ? THREE.HalfFloatType : THREE.FloatType,
 		stencilBuffer: false,
 		depthBuffer: true
 	});
@@ -432,7 +438,7 @@ function createRenderTarger( width, height ) {
 var motionRT = createRenderTarger( 1, 1 ), colorRT = createRenderTarger( 1, 1 );
 var rtScene, rtQuad, rtShader, rtCamera;
 
-var size = window.location.hash.substr( 1 ) || 256;
+var size = window.location.hash.substr( 1 ) ||( isMobile.any ? 64 : 256 );
 var width = size;
 var height = size;
 
