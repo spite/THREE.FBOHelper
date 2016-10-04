@@ -11,7 +11,7 @@ var layerCSS = `
 	z-index: 1000000;
 	width: 150px;
 }
-#fbos-list, #fbos-list *, #hotspot, #label{
+#fbos-list, #fbos-list *, #hotspot, #label, #info{
 	box-sizing: border-box;
 	font-family: 'Roboto Mono', 'courier new', courier, monospace;
 	font-size: 11px;
