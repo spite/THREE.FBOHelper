@@ -1,6 +1,7 @@
 # THREE.FBOHelper
 FrameBuffer Object inspector for three.js
 
+Check out a demo here: [Goth GPU Physics](https://www.clicktorelease.com/code/THREE.FBOHelper/#512)
 # Screenshots
 
 <table>
