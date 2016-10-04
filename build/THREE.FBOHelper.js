@@ -272,14 +272,17 @@ class FBOHelper {
 		const height = fbo.height * width / fbo.width;
 
 		const material = new THREE.MeshBasicMaterial( { map: fbo, side: THREE.DoubleSide } );
-		const quad = new THREE.Mesh( new THREE.PlaneBufferGeometry( width, height ), material );
+		const quad = new THREE.Mesh( new THREE.PlaneBufferGeometry( 1, 1 ), material );
 		if( !fbo.flipY ) quad.rotation.x = Math.PI;
 		quad.visible = false;
 		quad.width = width;
 		quad.height = height;
+		quad.scale.set( width, height, 1. );
 		this.scene.add( quad );
 
 		var fboData = {
+			width: width,
+			height: height,
 			name: name,
 			fbo: fbo,
 			flipY: fbo.flipY,
@@ -300,8 +303,8 @@ class FBOHelper {
 				li.classList.add( 'active' );
 				this.info.style.display = 'block';
 				this.grid.style.display = 'block';
-				this.grid.style.width = ( width + 2 ) + 'px';
-				this.grid.style.height = ( height + 2 ) + 'px';
+				this.grid.style.width = ( fboData.width + 2 ) + 'px';
+				this.grid.style.height = ( fboData.height + 2 ) + 'px';
 				this.currentObj = fboData;
 				this.info.innerHTML = `Width: ${fbo.width} Height: ${fbo.height}<br/>Format: ${formats[fbo.texture.format]} Type: ${types[fbo.texture.type]}`;
 			} else {
@@ -316,7 +319,33 @@ class FBOHelper {
 
 	}
 
-	detach( fbo ) {
+	detach( f ) {
+
+		var p = 0;
+		for( var fbo of this.fbos ) {
+			if( fbo.fbo === f ) {
+				this.fbos.splice( p, 1 )
+			}
+			p++;
+		}
+
+		this.buildList();
+
+	}
+
+	refreshFBO( f ) {
+
+		for( var fbo of this.fbos ) {
+			if( fbo.fbo === f ) {
+				const width = 600;
+				const height = f.height * width / f.width;
+				fbo.width = width;
+				fbo.height = height;
+				fbo.quad.width = width;
+				fbo.quad.height = height;
+				fbo.quad.scale.set( width, height, 1. );
+			}
+		}
 
 	}
 
