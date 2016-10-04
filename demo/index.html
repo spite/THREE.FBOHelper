@@ -163,6 +163,7 @@ void main() {
 		float f = length( c.xyz );
 		c.xyz = f * randomHemisphereDir( reflect( i, n ), hash( length( c ) + time ) );
 		c.xz *= bounce;
+		c.xyz *= friction;
 	}
 
 	for( int j = 0; j < 20; j++ ) {
@@ -177,11 +178,12 @@ void main() {
 			c.xyz = f * randomHemisphereDir( r, hash( length( c ) + time ) );
 			c *= bounce;
 			c.xyz += sphereVelocities[ j ].xyz;
+			c.xyz *= friction;
 		}
 	}
 
 	c.y -= info.x * gravity;
-	c *= friction;
+	c *= .99;
 
 	gl_FragColor = c;
 
@@ -226,6 +228,7 @@ precision highp float;
 
 attribute vec3 position;
 attribute vec2 uv;
+attribute vec2 id;
 
 uniform mat4 modelMatrix;
 uniform mat4 modelViewMatrix;
@@ -243,32 +246,42 @@ uniform sampler2D positionTexture;
 uniform sampler2D previousPositionTexture;
 uniform sampler2D velocityTexture;
 
-uniform vec3 colors[ 9 ];
-
 varying vec2 vUv;
 varying float life;
 varying vec2 vSpeed;
+varying float vSize;
+
+float modI(float a,float b) {
+    float m=a-floor((a+0.5)/b)*b;
+    return floor(m+0.5);
+}
 
 void main() {
 
-	vec4 i = texture2D( infoTexture, uv );
-	vec4 c = texture2D( positionTexture, uv );
+	float ptr = id.x;
+	float u = modI( ptr, dimensions.x ) / dimensions.x;
+	float v = ( ptr / dimensions.x ) / dimensions.y;
+	vec2 puv = vec2( u, v );
+
+	vec4 i = texture2D( infoTexture, puv );
+
+	vec4 c = texture2D( positionTexture, puv );
 	vec3 p = c.xyz;
 	vUv = uv;
 	float delta = 10.;
 	life = 1. - ( c.a / 1000. );
 	if( c.a == 0. ) life = 0.;
 
-	vec4 mvPosition = modelViewMatrix * vec4( p, 1. );
-    gl_PointSize = i.x * ( 600.0 / length( mvPosition.xyz ) );
-	gl_Position = projectionMatrix * mvPosition;
+	vec4 modified = modelViewMatrix * vec4( p, 1. );
+	modified.xyz += size * i.x * 10. * position;
+	gl_Position = projectionMatrix * modified;
 
 /*	vec4 prev = texture2D( previousPositionTexture, uv );
 	vSpeed = gl_Position.xy - ( prevProjectionMatrix * prevModelViewMatrix * vec4( prev.xyz, 1. ) ).xy;
 	vSpeed += gl_Position.xy - ( prevProjectionMatrix * prevModelViewMatrix * vec4( p.xyz, 1. ) ).xy;*/
 
-	vec4 v = texture2D( velocityTexture, uv );
-	vSpeed = ( projectionMatrix  * vec4( v.xyz, 1. ) ).xy;
+	vec4 velocity = texture2D( velocityTexture, puv );
+	vSpeed = ( projectionMatrix * vec4( velocity.xyz, 1. ) ).xy;
 
 }
 
@@ -284,8 +297,9 @@ varying vec2 vSpeed;
 
 void main() {
 
-	float d = smoothstep( .5, .55, 1. - length( gl_PointCoord - .5 ) );
-	if( d == 0. ) discard;
+	vec2 barycenter = vec2( .5, .6666 );
+	float d = smoothstep( .5, .55, 1. - 2. * length( vUv - barycenter ) );
+	if( d <= 0. ) discard;
 	gl_FragColor = vec4( .1 * vSpeed, life, d * life );
 
 }
@@ -404,7 +418,36 @@ var Params = function() {
 	this.bounce = .5;
 	this.friction = .99;
 	this.gravity = .1;
-	this.spread = 1.;
+	this.spread = .5;
+	this.size = 1.;
+	this.jet = function() {
+		this.bounce = .5;
+		this.friction = .99;
+		this.gravity = .1;
+		this.spread = .1;
+		this.size = 1.;
+	}.bind( this );
+	this.rain = function() {
+		this.bounce = .66;
+		this.friction = .99;
+		this.gravity = .1;
+		this.spread = 2;
+		this.size = .7;
+	}.bind( this );
+	this.confetti = function() {
+		this.bounce = 0;
+		this.friction = .4;
+		this.gravity = .1;
+		this.spread = 1.11;
+		this.size = .6;
+	}.bind( this );
+	this.sand = function() {
+		this.bounce = .09;
+		this.friction = .1;
+		this.gravity = .1;
+		this.spread = .5;
+		this.size = .5;
+	}.bind( this );
 };
 var params = new Params();
 
@@ -618,28 +661,58 @@ function init() {
 	particleGeometry = new THREE.BufferGeometry();
 
 	var dimensions = new THREE.Vector2( width, height );
-	var particles = width * height;
+	var particles = width * height * 3;
 	var positions = new Float32Array( particles * 3 );
 	var uvs = new Float32Array( particles * 2 );
+	var ids = new Float32Array( particles * 2 );
 
-	for ( var i = 0, i3 = 0, i2 = 0; i < particles; i ++, i3 += 3, i2 += 2 ) {
+	var h = Math.sqrt( 1 * 1 - .5 * .5 );
+	var points = [
+		new THREE.Vector3( -.5, - .5 * h ),
+		new THREE.Vector3( 0, .5 * h ),
+		new THREE.Vector3( .5, - .5 * h )
+	];
+	var coords = [
+		new THREE.Vector2( 0, 1 ),
+		new THREE.Vector2( .5, 0 ),
+		new THREE.Vector2( 1, 1 )
+	];
 
-		positions[ i3 + 0 ] = Maf.randomInRange( 1, 2 );
-		positions[ i3 + 1 ] = Maf.randomInRange( -100, 100 );
-		positions[ i3 + 2 ] = Maf.randomInRange( -100, 100 );
+	for ( var i = 0, i2 = 0; i < particles * 3; i += 3, i2++ ) {
 
-		var x = ( i % dimensions.x ) / dimensions.x;
-		var y = Math.floor( i / dimensions.x ) % dimensions.y / dimensions.y;
-		uvs[ i2 + 0 ] = x;
-		uvs[ i2 + 1 ] = y;
+		positions[ i + 0 ] = points[ i2 % 3 ].x;
+		positions[ i + 1 ] = points[ i2 % 3 ].y;
+		positions[ i + 2 ] = points[ i2 % 3 ].z;
+
+	}
+
+	for ( var i = 0, i2 = 0; i < particles * 2; i += 2, i2++ ) {
+
+		uvs[ i + 0 ] = coords[ i2 % 3 ].x;
+		uvs[ i + 1 ] = coords[ i2 % 3 ].y;
+
+	}
+
+	for ( var i = 0, i2 = 0; i < particles * 2; i += 6, i2++ ) {
+
+		ids[ i + 0 ] = i2;
+		ids[ i + 1 ] = i2;
+
+		ids[ i + 2 ] = i2;
+		ids[ i + 3 ] = i2;
+
+		ids[ i + 4 ] = i2;
+		ids[ i + 5 ] = i2;
 
 	}
 
 	particleGeometry.addAttribute( 'position', new THREE.BufferAttribute( positions, 3 ) );
 	particleGeometry.addAttribute( 'uv', new THREE.BufferAttribute( uvs, 2 ) );
+	particleGeometry.addAttribute( 'id', new THREE.BufferAttribute( ids, 2 ) );
 
 	particleMaterial = new THREE.RawShaderMaterial( {
 		uniforms:{
+			size: { type: 'f', value: 1 },
 			originalTexture: { type: 't', value: texture },
 			infoTexture: { type: 't', value: texture2 },
 			positionTexture: { type: 't', value: positionSim.fbos[ 0 ] },
@@ -653,11 +726,12 @@ function init() {
 		vertexShader: document.getElementById( 'particle-vs' ).textContent,
 		fragmentShader: document.getElementById( 'particle-fs' ).textContent,
 		transparent: false,
+		side: THREE.DoubleSide,
 		depthTest: true,
 		depthWrite: true
 	} );
 
-	particleSystem = new THREE.Points( particleGeometry, particleMaterial );
+	particleSystem = new THREE.Mesh( particleGeometry, particleMaterial );
 
 	world.add( particleSystem );
 
@@ -685,6 +759,11 @@ function init() {
 	gui.add( params, "friction", 0, 1 );
 	gui.add( params, "gravity", 0, 1 );
 	gui.add( params, "spread", 0, 2 );
+	gui.add( params, "size", .1, 2 );
+	gui.add( params, "jet" );
+	gui.add( params, "rain" );
+	gui.add( params, "confetti" );
+	gui.add( params, "sand" );
 
 	window.addEventListener( 'resize', onWindowResized );
 	onWindowResized();
@@ -746,6 +825,7 @@ function render() {
 	velocitySim.shader.uniforms.friction.value = params.friction;
 	velocitySim.shader.uniforms.gravity.value = params.gravity;
 	positionSim.shader.uniforms.spread.value = params.spread;
+	particleMaterial.uniforms.size.value = params.size;
 
 	if( runAnimation ) {
 
