@@ -420,6 +420,7 @@ var Params = function() {
 	this.gravity = .1;
 	this.spread = .5;
 	this.size = 1.;
+	this.showSpheres = true;
 	this.jet = function() {
 		this.bounce = .5;
 		this.friction = .99;
@@ -760,6 +761,7 @@ function init() {
 	gui.add( params, "gravity", 0, 1 );
 	gui.add( params, "spread", 0, 2 );
 	gui.add( params, "size", .1, 2 );
+	gui.add( params, "showSpheres" );
 	gui.add( params, "jet" );
 	gui.add( params, "rain" );
 	gui.add( params, "confetti" );
@@ -826,6 +828,7 @@ function render() {
 	velocitySim.shader.uniforms.gravity.value = params.gravity;
 	positionSim.shader.uniforms.spread.value = params.spread;
 	particleMaterial.uniforms.size.value = params.size;
+	sphereObject.visible = params.showSpheres;
 
 	if( runAnimation ) {
 
