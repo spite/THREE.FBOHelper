@@ -21,7 +21,7 @@
 				padding: 0;
 				background-color: #000000;
 				color: #ffffff;
-				line-height: 20px;
+				line-height: 1.4em;
 				height: 100%;
 				overflow: hidden;
 				font-family: 'Roboto Slab', sans-serif;
@@ -35,19 +35,50 @@
 				right: 0;
 				bottom: 0;
 			}
+			#info{
+				position: absolute;
+				left: 2em;
+				bottom: 1em;
+				z-index: 10000;
+			}
+			#info h1{
+				font-weight: bold
+			}
+			#info p{
+				margin-bottom: 1em;
+			}
+			#info a{
+				font: inherit;
+				color: inherit;
+			}
 		</style>
 	</head>
 	<body>
 
 		<div id="container"></div>
 
+		<div id="info">
+			<h1>Demo for THREE.FBOHelper · <a href="https://github.com/spite/THREE.FBOHelper" >GitHub</a></h1>
+			<p>FrameBuffer Object inspector for three.js</p>
+			<p>Number of particles: <a href="#128" >Mobile</a> <a href="#512" >Normal</a> <a href="#1024" >More!</a> <a href="#2048" >MOAR!</a></p>
+			<p>Click the FBO buttons on the top left.<br/>You can drag the viewer, zoom in and out with scroll.<br/>Hover to see the values in the FBO.</p>
+			<p>Click and drag to rotate the scene, press Space to freeze and unfreeze.</p>
+			<p><a href="https://twitter.com/thespite" >@thespite</a> · <a href="https://clicktorelease.com" >clicktorelease.com</a>
+		</div>
+
 		<script src="js/three.js"></script>
 		<script src="js/WebVR.js"></script>
 		<script src="js/VREffect.js"></script>
 		<script src="js/VRControls.js"></script>
 		<script src="../src/THREE.FBOHelper.js"></script>
+		<script src="js/isMobile.min.js"></script>
 		<script src="js/OrbitControls.js"></script>
 		<script src="js/Maf.js"></script>
+		<script src="js/dat.gui.min.js"></script>
+
+		<script>
+		window.onhashchange = function() { window.location.reload() }
+		</script>
 
 
 <script id="ortho-vs" type="x-shader/x-vertex" >
@@ -135,6 +166,7 @@ void main() {
 		float f = length( c.xyz );
 		c.xyz = f * randomHemisphereDir( reflect( i, n ), hash( length( c ) + time ) );
 		c.xz *= bounce;
+		c.xyz *= friction;
 	}
 
 	for( int j = 0; j < 20; j++ ) {
@@ -149,11 +181,12 @@ void main() {
 			c.xyz = f * randomHemisphereDir( r, hash( length( c ) + time ) );
 			c *= bounce;
 			c.xyz += sphereVelocities[ j ].xyz;
+			c.xyz *= friction;
 		}
 	}
 
-	c.y -= info.x * gravity / 1000.;
-	c *= friction;
+	c.y -= info.x * gravity;
+	c *= .99;
 
 	gl_FragColor = c;
 
@@ -198,6 +231,7 @@ precision highp float;
 
 attribute vec3 position;
 attribute vec2 uv;
+attribute vec2 id;
 
 uniform mat4 modelMatrix;
 uniform mat4 modelViewMatrix;
@@ -218,27 +252,39 @@ uniform sampler2D velocityTexture;
 varying vec2 vUv;
 varying float life;
 varying vec2 vSpeed;
+varying float vSize;
+
+float modI(float a,float b) {
+    float m=a-floor((a+0.5)/b)*b;
+    return floor(m+0.5);
+}
 
 void main() {
 
-	vec4 i = texture2D( infoTexture, uv );
-	vec4 c = texture2D( positionTexture, uv );
+	float ptr = id.x;
+	float u = modI( ptr, dimensions.x ) / dimensions.x;
+	float v = ( ptr / dimensions.x ) / dimensions.y;
+	vec2 puv = vec2( u, v );
+
+	vec4 i = texture2D( infoTexture, puv );
+
+	vec4 c = texture2D( positionTexture, puv );
 	vec3 p = c.xyz;
 	vUv = uv;
 	float delta = 10.;
 	life = 1. - ( c.a / 1000. );
 	if( c.a == 0. ) life = 0.;
 
-	vec4 mvPosition = modelViewMatrix * vec4( p, 1. );
-    gl_PointSize = i.x * ( 6.0 / length( mvPosition.xyz ) );
-	gl_Position = projectionMatrix * mvPosition;
+	vec4 modified = modelViewMatrix * vec4( p, 1. );
+	modified.xyz += size * i.x * 10. * position;
+	gl_Position = projectionMatrix * modified;
 
 /*	vec4 prev = texture2D( previousPositionTexture, uv );
 	vSpeed = gl_Position.xy - ( prevProjectionMatrix * prevModelViewMatrix * vec4( prev.xyz, 1. ) ).xy;
 	vSpeed += gl_Position.xy - ( prevProjectionMatrix * prevModelViewMatrix * vec4( p.xyz, 1. ) ).xy;*/
 
-	vec4 v = texture2D( velocityTexture, uv );
-	vSpeed = ( projectionMatrix  * vec4( v.xyz, 1. ) ).xy;
+	vec4 velocity = texture2D( velocityTexture, puv );
+	vSpeed = ( projectionMatrix * modelViewMatrix * vec4( velocity.xyz, 1. ) ).xy;
 
 }
 
@@ -254,9 +300,10 @@ varying vec2 vSpeed;
 
 void main() {
 
-	float d = smoothstep( .5, .55, 1. - length( gl_PointCoord - .5 ) );
-	if( d == 0. ) discard;
-	gl_FragColor = vec4( vSpeed, life, d * life );
+	vec2 barycenter = vec2( .5, .6666 );
+	float d = smoothstep( .5, .55, 1. - 2. * length( vUv - barycenter ) );
+	if( d <= 0. ) discard;
+	gl_FragColor = vec4( .1 * vSpeed, life, d * life );
 
 }
 
@@ -370,6 +417,44 @@ var floor, world;
 
 var container = document.getElementById( 'container' );
 
+var Params = function() {
+	this.bounce = .5;
+	this.friction = .99;
+	this.gravity = .1;
+	this.spread = .5;
+	this.size = 1.;
+	this.showSpheres = true;
+	this.jet = function() {
+		this.bounce = .5;
+		this.friction = .99;
+		this.gravity = .1;
+		this.spread = .1;
+		this.size = 1.;
+	}.bind( this );
+	this.rain = function() {
+		this.bounce = .66;
+		this.friction = .99;
+		this.gravity = .1;
+		this.spread = 2;
+		this.size = .7;
+	}.bind( this );
+	this.confetti = function() {
+		this.bounce = 0;
+		this.friction = .4;
+		this.gravity = .1;
+		this.spread = 1.11;
+		this.size = .6;
+	}.bind( this );
+	this.sand = function() {
+		this.bounce = .09;
+		this.friction = .1;
+		this.gravity = .1;
+		this.spread = .5;
+		this.size = .5;
+	}.bind( this );
+};
+var params = new Params();
+
 window.addEventListener( 'load', init );
 
 function createFBO( width, height ) {
@@ -397,7 +482,7 @@ function createRenderTarger( width, height ) {
 		wrapS: THREE.ClampToEdgeWrapping,
 		wrapT: THREE.ClampToEdgeWrapping,
 		format: THREE.RGBAFormat,
-		type: THREE.FloatType,
+		type: isMobile.any ? THREE.HalfFloatType : THREE.FloatType,
 		stencilBuffer: false,
 		depthBuffer: true
 	});
@@ -410,7 +495,7 @@ function createRenderTarger( width, height ) {
 var motionRT = createRenderTarger( 1, 1 );
 var rtScene, rtQuad, rtShader, rtCamera;
 
-var size = window.location.hash.substr( 1 ) || 256;
+var size = window.location.hash.substr( 1 ) ||( isMobile.any ? 64 : 256 );
 var width = size;
 var height = size;
 
@@ -447,8 +532,9 @@ function init() {
 
 	camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, .01, 10000 );
 	camera.target = new THREE.Vector3( 0, 0, 0 );
-	camera.position.set( -5.732129761886051, -3.1917158861924224, -2.12626789135172 );
-	//camera.position.set( -386.9360624668476, 592.0399594581557, -163.735637229391 );
+	camera.position.set( -573.2129761886051, -319.17158861924224, -212.626789135172 );
+	camera.position.set( -386.9360624668476, 592.0399594581557, -163.735637229391 );
+	camera.position.set( -881.9551097834948, -469.4538738739556, -327.1511479058356 );
 	//camera.position.set( 2.2142345804263397, 860.3191694902855, 1309.7027716556265 );
 	scene.add( camera );
 
@@ -594,28 +680,58 @@ function init() {
 	particleGeometry = new THREE.BufferGeometry();
 
 	var dimensions = new THREE.Vector2( width, height );
-	var particles = width * height;
+	var particles = width * height * 3;
 	var positions = new Float32Array( particles * 3 );
 	var uvs = new Float32Array( particles * 2 );
+	var ids = new Float32Array( particles * 2 );
 
-	for ( var i = 0, i3 = 0, i2 = 0; i < particles; i ++, i3 += 3, i2 += 2 ) {
+	var h = Math.sqrt( 1 * 1 - .5 * .5 );
+	var points = [
+		new THREE.Vector3( -.5, - .5 * h ),
+		new THREE.Vector3( 0, .5 * h ),
+		new THREE.Vector3( .5, - .5 * h )
+	];
+	var coords = [
+		new THREE.Vector2( 0, 1 ),
+		new THREE.Vector2( .5, 0 ),
+		new THREE.Vector2( 1, 1 )
+	];
 
-		positions[ i3 + 0 ] = Maf.randomInRange( 1, 2 );
-		positions[ i3 + 1 ] = Maf.randomInRange( -1, 1 );
-		positions[ i3 + 2 ] = Maf.randomInRange( -1, 1 );
+	for ( var i = 0, i2 = 0; i < particles * 3; i += 3, i2++ ) {
 
-		var x = ( i % dimensions.x ) / dimensions.x;
-		var y = Math.floor( i / dimensions.x ) % dimensions.y / dimensions.y;
-		uvs[ i2 + 0 ] = x;
-		uvs[ i2 + 1 ] = y;
+		positions[ i + 0 ] = points[ i2 % 3 ].x;
+		positions[ i + 1 ] = points[ i2 % 3 ].y;
+		positions[ i + 2 ] = points[ i2 % 3 ].z;
+
+	}
+
+	for ( var i = 0, i2 = 0; i < particles * 2; i += 2, i2++ ) {
+
+		uvs[ i + 0 ] = coords[ i2 % 3 ].x;
+		uvs[ i + 1 ] = coords[ i2 % 3 ].y;
+
+	}
+
+	for ( var i = 0, i2 = 0; i < particles * 2; i += 6, i2++ ) {
+
+		ids[ i + 0 ] = i2;
+		ids[ i + 1 ] = i2;
+
+		ids[ i + 2 ] = i2;
+		ids[ i + 3 ] = i2;
+
+		ids[ i + 4 ] = i2;
+		ids[ i + 5 ] = i2;
 
 	}
 
 	particleGeometry.addAttribute( 'position', new THREE.BufferAttribute( positions, 3 ) );
 	particleGeometry.addAttribute( 'uv', new THREE.BufferAttribute( uvs, 2 ) );
+	particleGeometry.addAttribute( 'id', new THREE.BufferAttribute( ids, 2 ) );
 
 	particleMaterial = new THREE.RawShaderMaterial( {
 		uniforms:{
+			size: { type: 'f', value: 1 },
 			originalTexture: { type: 't', value: texture },
 			infoTexture: { type: 't', value: texture2 },
 			positionTexture: { type: 't', value: positionSim.fbos[ 0 ] },
@@ -629,12 +745,13 @@ function init() {
 		vertexShader: document.getElementById( 'particle-vs' ).textContent,
 		fragmentShader: document.getElementById( 'particle-fs' ).textContent,
 		transparent: false,
+		side: THREE.DoubleSide,
 		depthTest: true,
 		depthWrite: true
 	} );
 
-	particleSystem = new THREE.Points( particleGeometry, particleMaterial );
-	particleSystem.frustumCulled = false;
+	particleSystem = new THREE.Mesh( particleGeometry, particleMaterial );
+
 	world.add( particleSystem );
 
 	rtShader = new THREE.RawShaderMaterial( {
@@ -654,7 +771,19 @@ function init() {
 	rtQuad = new THREE.Mesh( new THREE.PlaneBufferGeometry( 1, 1 ), rtShader );
 	rtScene.add( rtQuad );
 
-	helper.attach( motionRT, 'Motion' );
+	helper.attach( motionRT, 'Motion', function( i ) { return 'Speed: (' + i.r + ', ' + i.g + ')<br/>Life: ' + i.b + ' dLife: ' + i.a } );
+
+	var gui = new dat.GUI();
+	gui.add( params, "bounce", 0, 1 );
+	gui.add( params, "friction", 0, 1 );
+	gui.add( params, "gravity", 0, 1 );
+	gui.add( params, "spread", 0, 2 );
+	gui.add( params, "size", .1, 2 );
+	gui.add( params, "showSpheres" );
+	gui.add( params, "jet" );
+	gui.add( params, "rain" );
+	gui.add( params, "confetti" );
+	gui.add( params, "sand" );
 
 	window.addEventListener( 'resize', onWindowResized );
 	onWindowResized();
@@ -735,6 +864,13 @@ function renderEye( scene, camera, renderTarget, forceClear, rect ) {
 }
 
 function render() {
+
+	velocitySim.shader.uniforms.bounce.value = params.bounce;
+	velocitySim.shader.uniforms.friction.value = params.friction;
+	velocitySim.shader.uniforms.gravity.value = params.gravity;
+	positionSim.shader.uniforms.spread.value = params.spread;
+	particleMaterial.uniforms.size.value = params.size;
+	sphereObject.visible = params.showSpheres;
 
 	if( runAnimation ) {
 

@@ -3,7 +3,7 @@
 "use strict";
 
 var layerCSS = `
-#fbos-list{
+#fboh-fbos-list{
 	all: unset;
 	position: fixed;
 	left: 0;
@@ -11,13 +11,13 @@ var layerCSS = `
 	z-index: 1000000;
 	width: 150px;
 }
-#fbos-list, #fbos-list *, #hotspot, #label{
+#fboh-fbos-list, #fboh-fbos-list *, #fboh-hotspot, #fboh-label, #fboh-info{
 	box-sizing: border-box;
 	font-family: 'Roboto Mono', 'courier new', courier, monospace;
 	font-size: 11px;
 	line-height: 1.4em;
 }
-#fbos-list li{
+#fboh-fbos-list li{
 	cursor: pointer;
 	color: white;
 	width: 100%;
@@ -28,36 +28,36 @@ var layerCSS = `
 	text-align: center;
 	text-shadow: 0 -1px black;
 }
-#fbos-list li:hover{
+#fboh-fbos-list li:hover{
 	background-color: rgba( 158, 253, 56, .5 );
 }
-#fbos-list li.active{
+#fboh-fbos-list li.active{
 	background-color: rgba( 158, 253, 56, .5 );
 	color: white;
 	text-shadow: 0 1px black;
 }
-#hotspot{
+#fboh-hotspot{
 	position: absolute;
 	left: 0;
 	top: 0;
 	background-color: rgba( 158, 253, 56,.5);
 	pointer-events: none;
 }
-#label{
+#fboh-label{
 	position: absolute;
 	left: 0;
 	bottom: 0;
 	transform-origin: bottom left;
 	pointer-events: none;
 }
-#info{
+#fboh-info{
 	display: none;
 	position: absolute;
 	left: 160px;
 	top: 10px;
 	pointer-events: none;
 }
-.card{
+.fboh-card{
 	display: block;
 	white-space: nowrap;
 	color: black;
@@ -96,7 +96,7 @@ class FBOHelper {
 		this.autoUpdate = false;
 		this.fbos = []
 		this.list = document.createElement( 'ul' );
-		this.list.setAttribute( 'id', 'fbos-list' );
+		this.list.setAttribute( 'id', 'fboh-fbos-list' );
 		document.body.appendChild( this.list );
 
 		this.scene = new THREE.Scene();
@@ -107,21 +107,21 @@ class FBOHelper {
 
 		this.grid = document.createElement( 'div' );
 		this.grid.setAttribute( 'style', 'position: fixed; left: 50%; top: 50%; border: 1px solid #000000; transform: translate3d(-50%, -50%, 0 ); box-shadow: 0 0 50px black; display: none' );
-		this.grid.setAttribute( 'id', 'grid' );
+		this.grid.setAttribute( 'id', 'bfoh-grid' );
 		document.body.appendChild( this.grid );
 
 		this.hotspot = document.createElement( 'div' );
-		this.hotspot.setAttribute( 'id', 'hotspot' );
+		this.hotspot.setAttribute( 'id', 'fboh-hotspot' );
 		this.grid.appendChild( this.hotspot );
 
 		this.label = document.createElement( 'div' );
-		this.label.setAttribute( 'id', 'label' );
-		this.label.className = 'card';
+		this.label.setAttribute( 'id', 'fboh-label' );
+		this.label.className = 'fboh-card';
 		this.hotspot.appendChild( this.label );
 
 		this.info = document.createElement( 'div' );
-		this.info.setAttribute( 'id', 'info' );
-		this.info.className = 'card';
+		this.info.setAttribute( 'id', 'fboh-info' );
+		this.info.className = 'fboh-card';
 		document.body.appendChild( this.info );
 
 		this.currentObj = null;

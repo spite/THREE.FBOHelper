@@ -1,12 +1,14 @@
 # THREE.FBOHelper
 FrameBuffer Object inspector for three.js
 
+####Check out a demo here: [Goth GPU Physics](https://www.clicktorelease.com/code/THREE.FBOHelper/#512)
+<a href="https://www.clicktorelease.com/code/THREE.FBOHelper/" ><img src="https://raw.githubusercontent.com/spite/THREE.FBOHelper/master/about/demo.jpg" alt="Demo"/></a>
 # Screenshots
 
 <table>
 <tr>
-<td><img src="https://raw.githubusercontent.com/spite/THREE.FBOHelper/master/about/snapshot1.jpg" alt="Snapshot"/>Velocity buffer</td>
-<td><img src="https://raw.githubusercontent.com/spite/THREE.FBOHelper/master/about/snapshot2.jpg" alt="Snapshot"/>Position buffer</td>
+<td><img src="https://raw.githubusercontent.com/spite/THREE.FBOHelper/master/about/snapshot1.jpg" alt="Snapshot"/>Position buffer</td>
+<td><img src="https://raw.githubusercontent.com/spite/THREE.FBOHelper/master/about/snapshot2.jpg" alt="Snapshot"/>Motion blur buffer</td>
 </tr>
 <tr>
 <td><img src="https://raw.githubusercontent.com/spite/THREE.FBOHelper/master/about/snapshot3.jpg" alt="Snapshot"/>Shadow map buffer</td>
@@ -41,6 +43,15 @@ helper.attach( buffer, 'Particles', function( d ) {
 ```js
 helper.update();
 ```
+- If for any reason you resize the FBO, call:
+```js
+helper.refreshFBO( fbo );
+````
+
+- Call ```.detach``` to remove any fbo previously attached
+```js
+helper.deatch( fbo );
+````
 
 Once the helper is working, you can select FBOs to inspect, and drag the viewer around and use the scroll/mousewheel to zoom in and out.
 
