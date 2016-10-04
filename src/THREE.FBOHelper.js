@@ -319,7 +319,19 @@ class FBOHelper {
 
 	}
 
-	detach( fbo ) {
+	detach( f ) {
+
+		var p = 0;
+		for( var fbo of this.fbos ) {
+			if( fbo.fbo === f ) {
+				this.fbos.splice( p, 1 )
+			}
+			p++;
+		}
+
+		this.buildList();
+
+	}
 
 	refreshFBO( f ) {
 
