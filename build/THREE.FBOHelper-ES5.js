@@ -8,7 +8,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 	"use strict";
 
-	var layerCSS = '\n#fbos-list{\n\tall: unset;\n\tposition: fixed;\n\tleft: 0;\n\ttop: 0;\n\tz-index: 1000000;\n\twidth: 150px;\n}\n#fbos-list, #fbos-list *, #hotspot, #label, #info{\n\tbox-sizing: border-box;\n\tfont-family: \'Roboto Mono\', \'courier new\', courier, monospace;\n\tfont-size: 11px;\n\tline-height: 1.4em;\n}\n#fbos-list li{\n\tcursor: pointer;\n\tcolor: white;\n\twidth: 100%;\n\tpadding: 4px 0;\n\tborder-top: 1px solid #888;\n\tborder-bottom: 1px solid black;\n\tbackground-color: #444;\n\ttext-align: center;\n\ttext-shadow: 0 -1px black;\n}\n#fbos-list li:hover{\n\tbackground-color: rgba( 158, 253, 56, .5 );\n}\n#fbos-list li.active{\n\tbackground-color: rgba( 158, 253, 56, .5 );\n\tcolor: white;\n\ttext-shadow: 0 1px black;\n}\n#hotspot{\n\tposition: absolute;\n\tleft: 0;\n\ttop: 0;\n\tbackground-color: rgba( 158, 253, 56,.5);\n\tpointer-events: none;\n}\n#label{\n\tposition: absolute;\n\tleft: 0;\n\tbottom: 0;\n\ttransform-origin: bottom left;\n\tpointer-events: none;\n}\n#info{\n\tdisplay: none;\n\tposition: absolute;\n\tleft: 160px;\n\ttop: 10px;\n\tpointer-events: none;\n}\n.card{\n\tdisplay: block;\n\twhite-space: nowrap;\n\tcolor: black;\n\tpadding: 10px;\n\tbackground-color: white;\n\tborder: 1px solid black;\n}\n';
+	var layerCSS = '\n#fboh-fbos-list{\n\tall: unset;\n\tposition: fixed;\n\tleft: 0;\n\ttop: 0;\n\tz-index: 1000000;\n\twidth: 150px;\n}\n#fboh-fbos-list, #fboh-fbos-list *, #fboh-hotspot, #fboh-label, #fboh-info{\n\tbox-sizing: border-box;\n\tfont-family: \'Roboto Mono\', \'courier new\', courier, monospace;\n\tfont-size: 11px;\n\tline-height: 1.4em;\n}\n#fboh-fbos-list li{\n\tcursor: pointer;\n\tcolor: white;\n\twidth: 100%;\n\tpadding: 4px 0;\n\tborder-top: 1px solid #888;\n\tborder-bottom: 1px solid black;\n\tbackground-color: #444;\n\ttext-align: center;\n\ttext-shadow: 0 -1px black;\n}\n#fboh-fbos-list li:hover{\n\tbackground-color: rgba( 158, 253, 56, .5 );\n}\n#fboh-fbos-list li.active{\n\tbackground-color: rgba( 158, 253, 56, .5 );\n\tcolor: white;\n\ttext-shadow: 0 1px black;\n}\n#fboh-hotspot{\n\tposition: absolute;\n\tleft: 0;\n\ttop: 0;\n\tbackground-color: rgba( 158, 253, 56,.5);\n\tpointer-events: none;\n}\n#fboh-label{\n\tposition: absolute;\n\tleft: 0;\n\tbottom: 0;\n\ttransform-origin: bottom left;\n\tpointer-events: none;\n}\n#fboh-info{\n\tdisplay: none;\n\tposition: absolute;\n\tleft: 160px;\n\ttop: 10px;\n\tpointer-events: none;\n}\n.fboh-card{\n\tdisplay: block;\n\twhite-space: nowrap;\n\tcolor: black;\n\tpadding: 10px;\n\tbackground-color: white;\n\tborder: 1px solid black;\n}\n';
 
 	var formats = {};
 	formats[THREE.AlphaFormat] = 'THREE.AlphaFormat';
@@ -41,7 +41,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 			this.autoUpdate = false;
 			this.fbos = [];
 			this.list = document.createElement('ul');
-			this.list.setAttribute('id', 'fbos-list');
+			this.list.setAttribute('id', 'fboh-fbos-list');
 			document.body.appendChild(this.list);
 
 			this.scene = new THREE.Scene();
@@ -52,21 +52,21 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 			this.grid = document.createElement('div');
 			this.grid.setAttribute('style', 'position: fixed; left: 50%; top: 50%; border: 1px solid #000000; transform: translate3d(-50%, -50%, 0 ); box-shadow: 0 0 50px black; display: none');
-			this.grid.setAttribute('id', 'grid');
+			this.grid.setAttribute('id', 'bfoh-grid');
 			document.body.appendChild(this.grid);
 
 			this.hotspot = document.createElement('div');
-			this.hotspot.setAttribute('id', 'hotspot');
+			this.hotspot.setAttribute('id', 'fboh-hotspot');
 			this.grid.appendChild(this.hotspot);
 
 			this.label = document.createElement('div');
-			this.label.setAttribute('id', 'label');
-			this.label.className = 'card';
+			this.label.setAttribute('id', 'fboh-label');
+			this.label.className = 'fboh-card';
 			this.hotspot.appendChild(this.label);
 
 			this.info = document.createElement('div');
-			this.info.setAttribute('id', 'info');
-			this.info.className = 'card';
+			this.info.setAttribute('id', 'fboh-info');
+			this.info.className = 'fboh-card';
 			document.body.appendChild(this.info);
 
 			this.currentObj = null;
