@@ -21,7 +21,7 @@
 				padding: 0;
 				background-color: #000000;
 				color: #ffffff;
-				line-height: 20px;
+				line-height: 1.4em;
 				height: 100%;
 				overflow: hidden;
 				font-family: 'Roboto Slab', sans-serif;
@@ -35,6 +35,22 @@
 				right: 0;
 				bottom: 0;
 			}
+			#info{
+				position: absolute;
+				left: 2em;
+				bottom: 1em;
+				z-index: 10000;
+			}
+			#info h1{
+				font-weight: bold
+			}
+			#info p{
+				margin-bottom: 1em;
+			}
+			#info a{
+				font: inherit;
+				color: inherit;
+			}
 		</style>
 	</head>
 	<body>
@@ -42,8 +58,10 @@
 		<div id="container"></div>
 
 		<div id="info">
-			<h1>Demo for THREE.FBOHelper</h1>
-			<p>Click the FBO buttons on the top left, you can drag the viewer, zoom in and out with scroll, and hover to see the values in the FBO.</p>
+			<h1>Demo for THREE.FBOHelper · <a href="https://github.com/spite/THREE.FBOHelper" >GitHub</a></h1>
+			<p>FrameBuffer Object inspector for three.js</p>
+			<p>Click the FBO buttons on the top left.<br/>You can drag the viewer, zoom in and out with scroll.<br/>Hover to see the values in the FBO.</p>
+			<p><a href="https://twitter.com/thespite" >@thespite</a> · <a href="https://clicktorelease.com" >clicktorelease.com</a>
 		</div>
 
 		<script src="js/three.js"></script>
