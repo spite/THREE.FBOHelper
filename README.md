@@ -42,6 +42,15 @@ helper.attach( buffer, 'Particles', function( d ) {
 ```js
 helper.update();
 ```
+- If for any reason you resize the FBO, call:
+```js
+helper.refreshFBO( fbo );
+````
+
+- Call ```.detach``` to remove any fbo previously attached
+```js
+helper.deatch( fbo );
+````
 
 Once the helper is working, you can select FBOs to inspect, and drag the viewer around and use the scroll/mousewheel to zoom in and out.
 
