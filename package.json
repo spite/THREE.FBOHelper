@@ -1,11 +1,32 @@
 {
-  "name": "THREE.FBOHelper",
+  "name": "three.fbo-helper",
   "version": "1.0.0",
   "devDependencies": {
     "babel-cli": "^6.0.0",
     "babel-preset-es2015": "^6.14.0"
   },
   "scripts": {
-  	"build": "cp src/THREE.FBOHelper.js build/ && babel --presets es2015 src/THREE.FBOHelper.js -o build/THREE.FBOHelper-ES5.js"
-  }
+    "build": "browserify src/THREE.FBOHelper.js > build/THREE.FBOHelper.js && babel --presets es2015 src/THREE.FBOHelper.js -o build/THREE.FBOHelper-ES5.js"
+  },
+  "description": "FrameBuffer Object inspector for three.js",
+  "main": "build/THREE.FBOHelper.js",
+  "dependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/spite/THREE.FBOHelper.git"
+  },
+  "keywords": [
+    "webgl",
+    "three.js",
+    "framebuffer",
+    "object",
+    "fbo",
+    "viewer"
+  ],
+  "author": "Jaume Sanchez <the.spite@gmail.com> (https://www.clicktorelease.com)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/spite/THREE.FBOHelper/issues"
+  },
+  "homepage": "https://github.com/spite/THREE.FBOHelper#readme"
 }
