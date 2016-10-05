@@ -554,6 +554,7 @@ function init() {
 	});
 
 	controls = new THREE.OrbitControls( camera, renderer.domElement );
+	controls.noPan = true;
 
 	var ptr = 0;
 	var data = new Float32Array( width * height * 4 );
