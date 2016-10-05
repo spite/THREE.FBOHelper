@@ -23,6 +23,14 @@ FrameBuffer Object inspector for three.js
 ```js
 var helper = new THREE.FBOHelper( renderer );
 ```
+or use npm to install the package:
+```
+npm i three.fbo-helper
+```
+and include it in your code with
+```js
+require('three.fbo-helper.js');
+```
 - Call .setSize to adjust to the renderer size (don't forget to do onResize!)
 ```js
 helper.setSize( width, height );
