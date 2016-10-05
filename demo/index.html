@@ -276,7 +276,7 @@ void main() {
 	if( c.a == 0. ) life = 0.;
 
 	vec4 modified = modelViewMatrix * vec4( p, 1. );
-	modified.xyz += size * i.x * 10. * position;
+	modified.xyz += .1 * size * i.x * position;
 	gl_Position = projectionMatrix * modified;
 
 /*	vec4 prev = texture2D( previousPositionTexture, uv );
@@ -532,10 +532,7 @@ function init() {
 
 	camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, .01, 10000 );
 	camera.target = new THREE.Vector3( 0, 0, 0 );
-	camera.position.set( -573.2129761886051, -319.17158861924224, -212.626789135172 );
-	camera.position.set( -386.9360624668476, 592.0399594581557, -163.735637229391 );
-	camera.position.set( -881.9551097834948, -469.4538738739556, -327.1511479058356 );
-	//camera.position.set( 2.2142345804263397, 860.3191694902855, 1309.7027716556265 );
+	camera.position.set( 2.2142345804263397, 860.3191694902855, 1309.7027716556265 );
 	scene.add( camera );
 
 	world = new THREE.Object3D();
@@ -556,15 +553,15 @@ function init() {
 		fragmentShader: document.getElementById( 'object-fs' ).textContent
 	});
 
-	//controls = new THREE.OrbitControls( camera, renderer.domElement );
+	controls = new THREE.OrbitControls( camera, renderer.domElement );
 
-	controls = new THREE.VRControls( camera );
+//	controls = new THREE.VRControls( camera );
 	effect = new THREE.VREffect( renderer );
 	if ( navigator.getVRDisplays ) {
 		navigator.getVRDisplays()
 			.then( function ( displays ) {
 				effect.setVRDisplay( displays[ 0 ] );
-				controls.setVRDisplay( displays[ 0 ] );
+//				controls.setVRDisplay( displays[ 0 ] );
 			} )
 			.catch( function () {
 				// no displays
