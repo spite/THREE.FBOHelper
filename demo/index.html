@@ -151,6 +151,7 @@ void main() {
 	vec4 info = texture2D( infoTexture, vUv );
 	vec4 c = texture2D( inputTexture, vUv );
 	vec4 p = texture2D( positionTexture, vUv );
+
 	if( p.a == 0. ) {
 		vec4 o = texture2D( originalTexture, vUv );
 		c.xyz = normalize( o.xyz );
@@ -170,7 +171,7 @@ void main() {
 		float r = sphere[ j ].a;
 		vec3 pp = ( sphereRotationMatrix * vec4( sphere[ j ].xyz, 0. ) ).xyz - ( p.xyz + c.xyz );
 		float d = ( r * r ) / ( pp.x * pp.x + pp.y * pp.y + pp.z * pp.z ) ;
-		if( d >= 1.0 ) {
+		if( d >= .9 ) {
 			vec3 n = normalize( pp.xyz );
 			vec3 i = normalize( c.xyz );
 			float f = length( c.xyz );
@@ -252,9 +253,11 @@ varying vec2 vSpeed;
 varying float vSize;
 
 float modI(float a,float b) {
-    float m=a-floor((a+0.5)/b)*b;
-    return floor(m+0.5);
+	float m=a-floor((a+0.5)/b)*b;
+	return floor(m+0.5);
 }
+
+const float PI = 3.14159265359;
 
 void main() {
 
@@ -262,6 +265,8 @@ void main() {
 	float u = modI( ptr, dimensions.x ) / dimensions.x;
 	float v = ( ptr / dimensions.x ) / dimensions.y;
 	vec2 puv = vec2( u, v );
+	vec4 velocity = texture2D( velocityTexture, puv );
+	vSpeed = .1 * ( projectionMatrix * modelViewMatrix * vec4( velocity.xyz, 1. ) ).xy;
 
 	vec4 i = texture2D( infoTexture, puv );
 
@@ -273,15 +278,15 @@ void main() {
 	if( c.a == 0. ) life = 0.;
 
 	vec4 modified = modelViewMatrix * vec4( p, 1. );
-	modified.xyz += size * i.x * 10. * position;
+	float a = -atan( vSpeed.y, vSpeed.x ) - .5 * PI;
+	float l = clamp( length( vSpeed ), .5, 4. );
+	mat2 rot = mat2( cos( a ), -sin( a ), sin( a ), cos( a ) );
+	modified.xyz += size * i.x * 10. * vec3( rot * position.xy, 0. );
 	gl_Position = projectionMatrix * modified;
 
 /*	vec4 prev = texture2D( previousPositionTexture, uv );
 	vSpeed = gl_Position.xy - ( prevProjectionMatrix * prevModelViewMatrix * vec4( prev.xyz, 1. ) ).xy;
 	vSpeed += gl_Position.xy - ( prevProjectionMatrix * prevModelViewMatrix * vec4( p.xyz, 1. ) ).xy;*/
-
-	vec4 velocity = texture2D( velocityTexture, puv );
-	vSpeed = ( projectionMatrix * modelViewMatrix * vec4( velocity.xyz, 1. ) ).xy;
 
 }
 
@@ -295,12 +300,19 @@ varying vec2 vUv;
 varying float life;
 varying vec2 vSpeed;
 
+uniform float useTriangles;
+
 void main() {
 
-	vec2 barycenter = vec2( .5, .6666 );
-	float d = smoothstep( .5, .55, 1. - 2. * length( vUv - barycenter ) );
-	if( d <= 0. ) discard;
-	gl_FragColor = vec4( .1 * vSpeed, life, d * life );
+	if( useTriangles == 1. ) {
+		float d = 1.;
+		gl_FragColor = vec4( vSpeed, life, d * life );
+	} else {
+		vec2 barycenter = vec2( .5, .6666 );
+		float d = smoothstep( .5, .55, 1. - 2. * length( vUv - barycenter ) );
+		if( d <= 0. ) discard;
+		gl_FragColor = vec4( vSpeed, life, d * life );
+	}
 
 }
 
@@ -420,6 +432,7 @@ var Params = function() {
 	this.gravity = .1;
 	this.spread = .5;
 	this.size = 1.;
+	this.useTriangles = false;
 	this.showSpheres = true;
 	this.jet = function() {
 		this.bounce = .5;
@@ -448,6 +461,13 @@ var Params = function() {
 		this.gravity = .1;
 		this.spread = .5;
 		this.size = .5;
+	}.bind( this );
+	this.waterfall = function() {
+		this.bounce = .29;
+		this.friction = .1;
+		this.gravity = .1;
+		this.spread = .37;
+		this.size = .3;
 	}.bind( this );
 };
 var params = new Params();
@@ -716,6 +736,7 @@ function init() {
 	particleMaterial = new THREE.RawShaderMaterial( {
 		uniforms:{
 			size: { type: 'f', value: 1 },
+			useTriangles: { type: 'f', value: 0 },
 			originalTexture: { type: 't', value: texture },
 			infoTexture: { type: 't', value: texture2 },
 			positionTexture: { type: 't', value: positionSim.fbos[ 0 ] },
@@ -758,16 +779,18 @@ function init() {
 	helper.attach( motionRT, 'Motion', function( i ) { return 'Speed: (' + i.r + ', ' + i.g + ')<br/>Life: ' + i.b + ' dLife: ' + i.a } );
 
 	var gui = new dat.GUI();
-	gui.add( params, "bounce", 0, 1 );
-	gui.add( params, "friction", 0, 1 );
-	gui.add( params, "gravity", 0, 1 );
-	gui.add( params, "spread", 0, 2 );
-	gui.add( params, "size", .1, 2 );
+	gui.add( params, "bounce", 0, 1 ).listen();;
+	gui.add( params, "friction", 0, 1 ).listen();;
+	gui.add( params, "gravity", 0, 1 ).listen();;
+	gui.add( params, "spread", 0, 2 ).listen();;
+	gui.add( params, "size", .1, 2 ).listen();;
+	gui.add( params, "useTriangles" );
 	gui.add( params, "showSpheres" );
 	gui.add( params, "jet" );
 	gui.add( params, "rain" );
 	gui.add( params, "confetti" );
 	gui.add( params, "sand" );
+	gui.add( params, "waterfall" );
 
 	window.addEventListener( 'resize', onWindowResized );
 	onWindowResized();
@@ -830,6 +853,7 @@ function render() {
 	velocitySim.shader.uniforms.gravity.value = params.gravity;
 	positionSim.shader.uniforms.spread.value = params.spread;
 	particleMaterial.uniforms.size.value = params.size;
+	particleMaterial.uniforms.useTriangles.value = params.useTriangles ? 1 : 0;
 	sphereObject.visible = params.showSpheres;
 
 	if( runAnimation ) {
