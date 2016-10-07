@@ -252,6 +252,7 @@ class FBOHelper {
 	hide() {
 
 		this.hideAll();
+		this.info.style.display = 'none';
 		this.grid.style.display = 'none';
 		this.currentObj = null;
 
