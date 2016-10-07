@@ -6,7 +6,7 @@
     "babel-preset-es2015": "^6.14.0"
   },
   "scripts": {
-    "build": "browserify src/THREE.FBOHelper.js > build/THREE.FBOHelper.js && babel --presets es2015 src/THREE.FBOHelper.js -o build/THREE.FBOHelper-ES5.js"
+    "build": "cp src/THREE.FBOHelper.js build/THREE.FBOHelper.js && babel --presets es2015 src/THREE.FBOHelper.js -o build/THREE.FBOHelper-ES5.js"
   },
   "description": "FrameBuffer Object inspector for three.js",
   "main": "build/THREE.FBOHelper.js",
