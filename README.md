@@ -21,15 +21,16 @@ FrameBuffer Object inspector for three.js
 - Include THREE.FBOHelper.js. There's an ES6 build and an ES5 build transpiled with babel-cli in /build.
 - Create a helper linked to a WebGLRenderer
 ```js
-var helper = new THREE.FBOHelper( renderer );
+var helper = new FBOHelper( renderer );
 ```
 or use npm to install the package:
 ```
 npm i three.fbo-helper
 ```
-and include it in your code with
+and include it in your code (remember to include three.js too)
 ```js
-require('three.fbo-helper.js');
+var THREE = require( 'three' );
+var FBOHelper = require( 'three.fbo-helper' );
 ```
 - Call .setSize to adjust to the renderer size (don't forget to do onResize!)
 ```js
