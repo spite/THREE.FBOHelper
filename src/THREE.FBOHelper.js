@@ -1,4 +1,14 @@
-( () => {
+;(function() {
+
+	"use strict";
+
+	var root = this
+
+	var has_require = typeof require !== 'undefined'
+
+	var THREE = root.THREE || has_require && require('three')
+	if( !THREE )
+		throw new Error( 'FBOHelper requires three.js' )
 
 "use strict";
 
@@ -450,6 +460,15 @@ class FBOHelper {
 
 }
 
-THREE.FBOHelper = FBOHelper;
+if( typeof exports !== 'undefined' ) {
+	if( typeof module !== 'undefined' && module.exports ) {
+		exports = module.exports = FBOHelper
+	}
+	exports.FBOHelper = FBOHelper
+}
+else {
+	root.FBOHelper = FBOHelper
+}
 
-})();
+}).call(this);
+
