@@ -561,7 +561,7 @@ function init() {
 	renderer = new THREE.WebGLRenderer( { antialias: true, alpha: false } );
 	renderer.setPixelRatio( window.devicePixelRatio );
 
-	helper = new THREE.FBOHelper( renderer );
+	helper = new FBOHelper( renderer );
 
 	container.appendChild( renderer.domElement );
 
