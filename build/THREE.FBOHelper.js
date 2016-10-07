@@ -413,7 +413,7 @@ class FBOHelper {
 
 		const pixelBuffer = new ( type )( 4 );
 
-		renderer.readRenderTargetPixels( fbo, x, y, 1, 1, pixelBuffer );
+		this.renderer.readRenderTargetPixels( fbo, x, y, 1, 1, pixelBuffer );
 		const posTxt = `X : ${x} Y: ${y} u: ${u} v: ${v}`;
 		const dataTxt = obj.formatter ?
 			obj.formatter( {

@@ -412,7 +412,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 				var pixelBuffer = new type(4);
 
-				renderer.readRenderTargetPixels(fbo, x, y, 1, 1, pixelBuffer);
+				this.renderer.readRenderTargetPixels(fbo, x, y, 1, 1, pixelBuffer);
 				var posTxt = 'X : ' + x + ' Y: ' + y + ' u: ' + u + ' v: ' + v;
 				var dataTxt = obj.formatter ? obj.formatter({
 					x: x,
