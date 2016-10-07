@@ -4,7 +4,16 @@ var _createClass = function () { function defineProperties(target, props) { for 
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-(function () {
+;(function () {
+
+	"use strict";
+
+	var root = this;
+
+	var has_require = typeof require !== 'undefined';
+
+	var THREE = root.THREE || has_require && require('three');
+	if (!THREE) throw new Error('FBOHelper requires three.js');
 
 	"use strict";
 
@@ -188,6 +197,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 			value: function hide() {
 
 				this.hideAll();
+				this.info.style.display = 'none';
 				this.grid.style.display = 'none';
 				this.currentObj = null;
 			}
@@ -447,5 +457,12 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		return FBOHelper;
 	}();
 
-	THREE.FBOHelper = FBOHelper;
-})();
+	if (typeof exports !== 'undefined') {
+		if (typeof module !== 'undefined' && module.exports) {
+			exports = module.exports = FBOHelper;
+		}
+		exports.FBOHelper = FBOHelper;
+	} else {
+		root.FBOHelper = FBOHelper;
+	}
+}).call(undefined);
