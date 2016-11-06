@@ -253,7 +253,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 						_this2.grid.style.width = fboData.width + 2 + 'px';
 						_this2.grid.style.height = fboData.height + 2 + 'px';
 						_this2.currentObj = fboData;
-						_this2.info.innerHTML = 'Width: ' + fbo.width + ' Height: ' + fbo.height + '<br/>Format: ' + formats[fbo.texture.format] + ' Type: ' + types[fbo.texture.type];
+						_this2.info.innerHTML = 'Width: ' + fbo.width + ' Height: ' + fbo.height + '<br/>Format: ' + formats[fbo.texture ? fbo.texture.format : fbo.format] + ' Type: ' + types[fbo.texture ? fbo.texture.type : fbo.type];
 					} else {
 						_this2.info.style.display = 'none';
 						li.classList.remove('active');
@@ -414,9 +414,9 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 				types[THREE.UnsignedShort5551Type] = Uint16Array;
 				types[THREE.UnsignedShort565Type] = Uint16Array;
 
-				var type = types[fbo.texture.type];
+				var type = types[fbo.texture ? fbo.texture.type : fbo.type];
 				if (type === null) {
-					console.warning(fbo.texture.type + ' not supported');
+					console.warning(fbo.texture ? fbo.texture.type : fbo.type + ' not supported');
 					return;
 				}
 
