@@ -317,7 +317,7 @@ class FBOHelper {
 				this.grid.style.width = ( fboData.width + 2 ) + 'px';
 				this.grid.style.height = ( fboData.height + 2 ) + 'px';
 				this.currentObj = fboData;
-				this.info.innerHTML = `Width: ${fbo.width} Height: ${fbo.height}<br/>Format: ${formats[fbo.texture.format]} Type: ${types[fbo.texture.type]}`;
+				this.info.innerHTML = `Width: ${fbo.width} Height: ${fbo.height}<br/>Format: ${formats[fbo.texture?fbo.texture.format:fbo.format]} Type: ${types[fbo.texture?fbo.texture.type:fbo.type]}`;
 			} else {
 				this.info.style.display = 'none';
 				li.classList.remove( 'active' );
@@ -415,9 +415,9 @@ class FBOHelper {
 		types[ THREE.UnsignedShort5551Type ] = Uint16Array;
 		types[ THREE.UnsignedShort565Type ] = Uint16Array;
 
-		var type = types[ fbo.texture.type ];
+		var type = types[ fbo.texture ? fbo.texture.type : fbo.type ];
 		if( type === null ) {
-			console.warning( fbo.texture.type + ' not supported' );
+			console.warning( fbo.texture ? fbo.texture.type : fbo.type + ' not supported' );
 			return;
 		}
 
