@@ -114,6 +114,7 @@ uniform mat4 sphereRotationMatrix;
 uniform float bounce;
 uniform float friction;
 uniform float gravity;
+uniform float pressure;
 
 varying vec2 vUv;
 
@@ -158,6 +159,10 @@ void main() {
 		c.y = 0.;
 	}
 
+	c.y -= .1 * pressure;
+	c.y -= .1 * info.x * gravity;
+	c *= .99;
+
 	if( ( p.y + c.y ) < -500. ) {
 		vec3 n = vec3( 0., 1., 0. );
 		vec3 i = normalize( c.xyz );
@@ -182,9 +187,6 @@ void main() {
 			c.xyz *= friction;
 		}
 	}
-
-	c.y -= info.x * gravity;
-	c *= .99;
 
 	gl_FragColor = c;
 
@@ -429,43 +431,44 @@ var container = document.getElementById( 'container' );
 var Params = function() {
 	this.bounce = .5;
 	this.friction = .99;
-	this.gravity = .1;
+	this.pressure = .1;
 	this.spread = .5;
+	this.gravity = .5;
 	this.size = 1.;
 	this.useTriangles = false;
 	this.showSpheres = true;
 	this.jet = function() {
 		this.bounce = .5;
 		this.friction = .99;
-		this.gravity = .1;
+		this.pressure = .1;
 		this.spread = .1;
 		this.size = 1.;
 	}.bind( this );
 	this.rain = function() {
 		this.bounce = .66;
 		this.friction = .99;
-		this.gravity = .1;
+		this.pressure = .1;
 		this.spread = 2;
 		this.size = .7;
 	}.bind( this );
 	this.confetti = function() {
 		this.bounce = 0;
 		this.friction = .4;
-		this.gravity = .1;
+		this.pressure = .1;
 		this.spread = 1.11;
 		this.size = .6;
 	}.bind( this );
 	this.sand = function() {
 		this.bounce = .09;
 		this.friction = .1;
-		this.gravity = .1;
+		this.pressure = .1;
 		this.spread = .5;
 		this.size = .5;
 	}.bind( this );
 	this.waterfall = function() {
 		this.bounce = .29;
 		this.friction = .1;
-		this.gravity = .1;
+		this.pressure = .1;
 		this.spread = .37;
 		this.size = .3;
 	}.bind( this );
@@ -643,6 +646,7 @@ function init() {
 			bounce: { type: 'f', value: .5 },
 			friction: { type: 'f', value: .99 },
 			gravity: { type: 'f', value: .1 },
+			pressure: { type: 'f', value: .1 },
 			infoTexture: { type: 't', value: texture2 },
 			originalTexture: { type: 't', value: texture },
 			positionTexture: { type: 't', value: texture },
@@ -781,7 +785,8 @@ function init() {
 	var gui = new dat.GUI();
 	gui.add( params, "bounce", 0, 1 ).listen();;
 	gui.add( params, "friction", 0, 1 ).listen();;
-	gui.add( params, "gravity", 0, 1 ).listen();;
+	gui.add( params, "pressure", 0, 1 ).listen();;
+	gui.add( params, "gravity", .1, 1 ).listen();;
 	gui.add( params, "spread", 0, 2 ).listen();;
 	gui.add( params, "size", .1, 2 ).listen();;
 	gui.add( params, "useTriangles" );
@@ -851,6 +856,7 @@ function render() {
 	velocitySim.shader.uniforms.bounce.value = params.bounce;
 	velocitySim.shader.uniforms.friction.value = params.friction;
 	velocitySim.shader.uniforms.gravity.value = params.gravity;
+	velocitySim.shader.uniforms.pressure.value = params.pressure;
 	positionSim.shader.uniforms.spread.value = params.spread;
 	particleMaterial.uniforms.size.value = params.size;
 	particleMaterial.uniforms.useTriangles.value = params.useTriangles ? 1 : 0;
