@@ -6,7 +6,7 @@
 
 	var has_require = typeof require !== 'undefined'
 
-	var THREE = root.THREE || has_require && require('three')
+	var THREE = (root && root.THREE) || has_require && require('three')
 	if( !THREE )
 		throw new Error( 'FBOHelper requires three.js' )
 
