@@ -1,6 +1,8 @@
 # THREE.FBOHelper
 FrameBuffer Object inspector for three.js
 
+[![npm](https://img.shields.io/npm/v/three.fbo-helper.svg)](https://www.npmjs.com/package/three.fbo-helper)
+
 #### Demo ####
 - **[Goth GPU Physics](https://spite.github.io/THREE.FBOHelper/demo/)**: a particle simulation running in render targets. Click the buttons on the top left to look inside each one, and hover to read its values
 
