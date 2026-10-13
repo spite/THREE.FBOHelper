@@ -30,7 +30,7 @@ The library has been rewritten for current three.js. What changed from the 2016 
 - the viewer follows the canvas wherever it is in the page, it used to assume the canvas filled the window
 - nothing is drawn while the viewer is closed
 
-# Screenshots
+#### Screenshots ####
 
 <a href="https://raw.githubusercontent.com/spite/THREE.FBOHelper/master/about/snapshot1.jpg" ><img src="https://raw.githubusercontent.com/spite/THREE.FBOHelper/master/about/snapshot1.jpg" alt="The Position buffer" width="100%"/></a>
 
@@ -48,7 +48,7 @@ The alpha channel of the Position buffer on its own, zoomed in: the age of each 
 
 The red channel of the Velocity buffer on its own, the sideways speed of each particle after it bounces. It is shown by sign: blue is moving one way, orange the other, and black is not moving sideways at all.
 
-# How to use
+#### How to use ####
 
 - Use npm to install the package, alongside three.js:
 ```
@@ -138,4 +138,4 @@ Once the helper is working, you can select FBOs to inspect, and drag the viewer 
 
 MIT licensed
 
-Copyright (C) 2016 Jaume Sanchez Elias, http://www.clicktorelease.com
+Copyright (C) 2016 Jaume Sanchez Elias, https://www.clicktorelease.com
