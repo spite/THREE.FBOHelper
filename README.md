@@ -30,16 +30,21 @@ The library has been rewritten for current three.js. What changed from the 2016 
 
 # Screenshots
 
-<table>
-<tr>
-<td><img src="https://raw.githubusercontent.com/spite/THREE.FBOHelper/master/about/snapshot1.jpg" alt="Snapshot"/>The Position buffer, one texel per particle, with x, y and z as red, green and blue. The label shows the position and the age of the particle under the pointer.</td>
-<td><img src="https://raw.githubusercontent.com/spite/THREE.FBOHelper/master/about/snapshot2.jpg" alt="Snapshot"/>The Motion buffer, the scene as the final pass reads it: red and green are how fast each particle moves on screen, blue how much life it has left. The speeds are shown by sign, so what stands still is black.</td>
-</tr>
-<tr>
-<td><img src="https://raw.githubusercontent.com/spite/THREE.FBOHelper/master/about/snapshot3.jpg" alt="Snapshot"/>The alpha channel of the Position buffer on its own, zoomed in: the age of each particle, from dark to light. One texel is pinned, so its label keeps reading that particle.</td>
-<td><img src="https://raw.githubusercontent.com/spite/THREE.FBOHelper/master/about/snapshot4.jpg" alt="Snapshot"/>The red channel of the Velocity buffer on its own, the sideways speed of each particle after it bounces. It is shown by sign: blue is moving one way, orange the other, and black is not moving sideways at all.</td>
-</tr>
-</table>
+<a href="https://raw.githubusercontent.com/spite/THREE.FBOHelper/master/about/snapshot1.jpg" ><img src="https://raw.githubusercontent.com/spite/THREE.FBOHelper/master/about/snapshot1.jpg" alt="The Position buffer" width="100%"/></a>
+
+The Position buffer, one texel per particle, with x, y and z as red, green and blue. The label shows the position and the age of the particle under the pointer.
+
+<a href="https://raw.githubusercontent.com/spite/THREE.FBOHelper/master/about/snapshot2.jpg" ><img src="https://raw.githubusercontent.com/spite/THREE.FBOHelper/master/about/snapshot2.jpg" alt="The Motion buffer" width="100%"/></a>
+
+The Motion buffer, the scene as the final pass reads it: red and green are how fast each particle moves on screen, blue how much life it has left. The speeds are shown by sign, so what stands still is black.
+
+<a href="https://raw.githubusercontent.com/spite/THREE.FBOHelper/master/about/snapshot3.jpg" ><img src="https://raw.githubusercontent.com/spite/THREE.FBOHelper/master/about/snapshot3.jpg" alt="The alpha channel of the Position buffer on its own" width="100%"/></a>
+
+The alpha channel of the Position buffer on its own, zoomed in: the age of each particle, from dark to light. One texel is pinned, so its label keeps reading that particle.
+
+<a href="https://raw.githubusercontent.com/spite/THREE.FBOHelper/master/about/snapshot4.jpg" ><img src="https://raw.githubusercontent.com/spite/THREE.FBOHelper/master/about/snapshot4.jpg" alt="The red channel of the Velocity buffer on its own" width="100%"/></a>
+
+The red channel of the Velocity buffer on its own, the sideways speed of each particle after it bounces. It is shown by sign: blue is moving one way, orange the other, and black is not moving sideways at all.
 
 # How to use
 
