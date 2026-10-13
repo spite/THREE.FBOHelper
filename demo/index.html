@@ -35,6 +35,15 @@
 				right: 0;
 				bottom: 0;
 			}
+			#gui-container{
+				position: absolute;
+				right: 0;
+				top: 0;
+				width: 300px;
+				max-height: 100%;
+				overflow: auto;
+				z-index: 10000;
+			}
 			#info{
 				position: absolute;
 				left: 2em;
@@ -52,26 +61,30 @@
 				color: inherit;
 			}
 		</style>
+		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/guspira@0.1.1/dist/guspira.min.css">
 	</head>
 	<body>
 
 		<div id="container"></div>
+		<div id="gui-container"></div>
 
 		<div id="info">
 			<h1>Demo for THREE.FBOHelper · <a href="https://github.com/spite/THREE.FBOHelper" >GitHub</a></h1>
 			<p>FrameBuffer Object inspector for three.js</p>
 			<p>Number of particles: <a href="#128" >Mobile</a> <a href="#512" >Normal</a> <a href="#1024" >More!</a> <a href="#2048" >MOAR!</a></p>
-			<p>Click the FBO buttons on the top left.<br/>You can drag the viewer, zoom in and out with scroll.<br/>Hover to see the values in the FBO.</p>
+			<p>Click the FBO buttons on the top left.<br/>You can drag the viewer, zoom in and out with scroll.<br/>Hover to see the values in the FBO, click a texel to pin it.<br/>With the viewer open: up and down change the buffer, left and right the channel, 0 resets the view, Esc closes.</p>
 			<p>Click and drag to rotate the scene, press Space to freeze and unfreeze.</p>
 			<p><a href="https://twitter.com/thespite" >@thespite</a> · <a href="https://clicktorelease.com" >clicktorelease.com</a>
 		</div>
 
-		<script src="js/three.js"></script>
-		<script src="../src/THREE.FBOHelper.js"></script>
-		<script src="js/isMobile.min.js"></script>
-		<script src="js/OrbitControls.js"></script>
-		<script src="js/Maf.js"></script>
-		<script src="js/dat.gui.min.js"></script>
+		<script type="importmap">
+			{
+				"imports": {
+					"three": "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js",
+					"three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"
+				}
+			}
+		</script>
 
 		<script>
 		window.onhashchange = function() { window.location.reload() }
@@ -411,71 +424,59 @@ void main() {
 
 </script>
 
-<script>
+<script type="module">
 
-'use strict';
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GUI, signal } from 'https://cdn.jsdelivr.net/npm/guspira@0.1.1/dist/guspira.min.js';
+import { FBOHelper } from '../src/THREE.FBOHelper.js';
 
-var camera, controls, geometry,
-	scene, material,
+var mobile = /Mobi|Android/i.test( navigator.userAgent );
+
+function randomInRange( min, max ) {
+
+	return min + Math.random() * ( max - min );
+
+}
+
+var camera, controls,
+	scene,
 	particleGeometry, particleMaterial, particleSystem,
 	renderer,
-	container,
-	mesh, helper,
-	sphere;
+	helper;
 var positionSim, velocitySim;
 var spheres = [], sphereMesh = [], sphereObject = new THREE.Object3D();
-var floor, world;
+var world;
 
 var container = document.getElementById( 'container' );
 
-var Params = function() {
-	this.bounce = .5;
-	this.friction = .99;
-	this.pressure = .1;
-	this.spread = .5;
-	this.gravity = .5;
-	this.size = 1.;
-	this.useTriangles = false;
-	this.showSpheres = true;
-	this.jet = function() {
-		this.bounce = .5;
-		this.friction = .99;
-		this.pressure = .1;
-		this.spread = .1;
-		this.size = 1.;
-	}.bind( this );
-	this.rain = function() {
-		this.bounce = .66;
-		this.friction = .99;
-		this.pressure = .1;
-		this.spread = 2;
-		this.size = .7;
-	}.bind( this );
-	this.confetti = function() {
-		this.bounce = 0;
-		this.friction = .4;
-		this.pressure = .1;
-		this.spread = 1.11;
-		this.size = .6;
-	}.bind( this );
-	this.sand = function() {
-		this.bounce = .09;
-		this.friction = .1;
-		this.pressure = .1;
-		this.spread = .5;
-		this.size = .5;
-	}.bind( this );
-	this.waterfall = function() {
-		this.bounce = .29;
-		this.friction = .1;
-		this.pressure = .1;
-		this.spread = .37;
-		this.size = .3;
-	}.bind( this );
+var params = {
+	bounce: signal( .5 ),
+	friction: signal( .99 ),
+	pressure: signal( .1 ),
+	gravity: signal( .5 ),
+	spread: signal( .5 ),
+	size: signal( 1. ),
+	useTriangles: signal( false ),
+	showSpheres: signal( true )
 };
-var params = new Params();
+
+var presets = {
+	jet: { bounce: .5, friction: .99, pressure: .1, spread: .1, size: 1. },
+	rain: { bounce: .66, friction: .99, pressure: .1, spread: 2, size: .7 },
+	confetti: { bounce: 0, friction: .4, pressure: .1, spread: 1.11, size: .6 },
+	sand: { bounce: .09, friction: .1, pressure: .1, spread: .5, size: .5 },
+	waterfall: { bounce: .29, friction: .1, pressure: .1, spread: .37, size: .3 }
+};
+
+function applyPreset( name ) {
+
+	for( var key in presets[ name ] ) params[ key ].set( presets[ name ][ key ] );
+
+}
 
 window.addEventListener( 'load', init );
+if( document.readyState === 'complete' ) init();
 
 function createFBO( width, height ) {
 
@@ -496,26 +497,25 @@ function createFBO( width, height ) {
 
 }
 
-function createRenderTarger( width, height ) {
+function createRenderTarget( width, height ) {
 
 	var rt = new THREE.WebGLRenderTarget( width, height, {
 		wrapS: THREE.ClampToEdgeWrapping,
 		wrapT: THREE.ClampToEdgeWrapping,
 		format: THREE.RGBAFormat,
-		type: isMobile.any ? THREE.HalfFloatType : THREE.FloatType,
+		type: mobile ? THREE.HalfFloatType : THREE.FloatType,
 		stencilBuffer: false,
 		depthBuffer: true
 	});
-	rt.flipY = true;
-
 	return rt;
 
 }
 
-var motionRT = createRenderTarger( 1, 1 ), colorRT = createRenderTarger( 1, 1 );
+var motionRT = createRenderTarget( 1, 1 );
 var rtScene, rtQuad, rtShader, rtCamera;
 
-var size = window.location.hash.substr( 1 ) ||( isMobile.any ? 64 : 256 );
+var size = parseInt( window.location.hash.substr( 1 ), 10 );
+if( !( size >= 16 && size <= 4096 ) ) size = mobile ? 64 : 256;
 var width = size;
 var height = size;
 
@@ -528,19 +528,21 @@ function GPUSim( renderer, width, height, shader ) {
 	this.fbos = [ fbo, fbo.clone() ];
 	this.current = 0;
 	this.output = this.fbos[ 0 ];
-	this.orthoCamera = new THREE.OrthographicCamera( width / - 2, width / 2, height / 2, height / - 2, .00001, 1000 );
-	this.orthoQuad = new THREE.Mesh( new THREE.PlaneBufferGeometry( width, height ), this.shader );
+	this.orthoCamera = new THREE.OrthographicCamera( width / - 2, width / 2, height / 2, height / - 2, - 1, 1 );
+	this.orthoQuad = new THREE.Mesh( new THREE.PlaneGeometry( width, height ), this.shader );
 	this.orthoScene.add( this.orthoQuad );
 
 }
 
 GPUSim.prototype.render = function() {
 
-	this.shader.uniforms.inputTexture.value = this.fbos[ this.current ];
+	this.shader.uniforms.inputTexture.value = this.fbos[ this.current ].texture;
 	this.input = this.fbos[ this.current ];
 	this.current = 1 - this.current;
 	this.output = this.fbos[ this.current ];
-	this.renderer.render( this.orthoScene, this.orthoCamera, this.output );
+	this.renderer.setRenderTarget( this.output );
+	this.renderer.render( this.orthoScene, this.orthoCamera );
+	this.renderer.setRenderTarget( null );
 
 }
 
@@ -551,11 +553,7 @@ function init() {
 	scene = new THREE.Scene();
 
 	camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, .01, 10000 );
-	camera.target = new THREE.Vector3( 0, 0, 0 );
-	camera.position.set( -573.2129761886051, -319.17158861924224, -212.626789135172 );
-	camera.position.set( -386.9360624668476, 592.0399594581557, -163.735637229391 );
 	camera.position.set( -881.9551097834948, -469.4538738739556, -327.1511479058356 );
-	//camera.position.set( 2.2142345804263397, 860.3191694902855, 1309.7027716556265 );
 	scene.add( camera );
 
 	world = new THREE.Object3D();
@@ -568,16 +566,13 @@ function init() {
 
 	container.appendChild( renderer.domElement );
 
-	var light = new THREE.HemisphereLight( 0xffffbb, 0x080820, 1 );
-	world.add( light );
-
 	var material = new THREE.RawShaderMaterial( {
 		vertexShader: document.getElementById( 'object-vs' ).textContent,
 		fragmentShader: document.getElementById( 'object-fs' ).textContent
 	});
 
-	controls = new THREE.OrbitControls( camera, renderer.domElement );
-	controls.noPan = true;
+	controls = new OrbitControls( camera, renderer.domElement );
+	controls.enablePan = false;
 
 	var ptr = 0;
 	var data = new Float32Array( width * height * 4 );
@@ -586,8 +581,8 @@ function init() {
 	for( var y = 0; y < height; y++ ) {
 		for( var x = 0; x < width; x++ ) {
 
-			var a = Maf.randomInRange( 0, 1 );
-			var b = Maf.randomInRange( 0, 1 );
+			var a = randomInRange( 0, 1 );
+			var b = randomInRange( 0, 1 );
 			if( a > b ) {
 				var tmp = b;
 				b = a;
@@ -597,11 +592,11 @@ function init() {
 			var pz = b * 400 * Math.sin( 2 * Math.PI * a / b );
 
 			data[ ptr ] = px
-			data[ ptr + 1 ] = Maf.randomInRange( 1000, 2000 );
+			data[ ptr + 1 ] = randomInRange( 1000, 2000 );
 			data[ ptr + 2 ] = pz;
-			data[ ptr + 3 ] = Maf.randomInRange( 1, 499 );
+			data[ ptr + 3 ] = randomInRange( 1, 499 );
 
-			data2[ ptr ] = Maf.randomInRange( 1, 2 );
+			data2[ ptr ] = randomInRange( 1, 2 );
 
 			ptr += 4;
 		}
@@ -619,21 +614,21 @@ function init() {
 	var uniformSpheres = [];
 	var uniformSpheresVelocities = [];
 	for( var j = 0; j < 20; j++ ) {
-		var r = Maf.randomInRange( 100, 200 );
-		var x = Maf.randomInRange( -400, 400 );
-		var y = Maf.randomInRange( -400, 400 );
-		var z = Maf.randomInRange( -400, 400 );
+		var r = randomInRange( 100, 200 );
+		var x = randomInRange( -400, 400 );
+		var y = randomInRange( -400, 400 );
+		var z = randomInRange( -400, 400 );
 
 		spheres.push( {
 			origin: new THREE.Vector3( x, y, z ),
 			radius: r,
-			orbit: Maf.randomInRange( 50, 100 ),
-			speed: Maf.randomInRange( 1, 2 ),
-			beat: Maf.randomInRange( 1, 2 )
+			orbit: randomInRange( 50, 100 ),
+			speed: randomInRange( 1, 2 ),
+			beat: randomInRange( 1, 2 )
 		} );
 		uniformSpheres.push( new THREE.Vector4( 0, 0, 0, 0 ) );
 		uniformSpheresVelocities.push( new THREE.Vector4( 0, 0, 0, 0 ) );
-		var s = new THREE.Mesh( new THREE.IcosahedronGeometry( 1, 3 ), material );
+		var s = new THREE.Mesh( new THREE.IcosahedronGeometry( 1, 7 ), material );
 		s.scale.set( r, r, r );
 		sphereObject.add( s );
 		sphereMesh.push( s );
@@ -663,8 +658,10 @@ function init() {
 
 	velocitySim = new GPUSim( renderer, width, height, velocityShader );
 
-	helper.attach( velocitySim.fbos[ 0 ], 'Velocity FBO#0' );
-	helper.attach( velocitySim.fbos[ 1 ], 'Velocity FBO#1' );
+	// one texel per particle: its velocity
+	var velocityInfo = { channels: { r: 'velocity x', g: 'velocity y', b: 'velocity z' }, range: 'auto' };
+	helper.attach( velocitySim.fbos[ 0 ], 'Velocity FBO#0', velocityInfo );
+	helper.attach( velocitySim.fbos[ 1 ], 'Velocity FBO#1', velocityInfo );
 
 	var positionShader = new THREE.RawShaderMaterial( {
 		uniforms:{
@@ -682,8 +679,10 @@ function init() {
 
 	positionSim = new GPUSim( renderer, width, height, positionShader );
 
-	helper.attach( positionSim.fbos[ 0 ], 'Position FBO#0' );
-	helper.attach( positionSim.fbos[ 1 ], 'Position FBO#1' );
+	// one texel per particle: where it is, and how long it has been falling. It starts again at 1000
+	var positionInfo = { channels: { r: 'position x', g: 'position y', b: 'position z', a: 'age' }, range: 'auto' };
+	helper.attach( positionSim.fbos[ 0 ], 'Position FBO#0', positionInfo );
+	helper.attach( positionSim.fbos[ 1 ], 'Position FBO#1', positionInfo );
 
 	particleGeometry = new THREE.BufferGeometry();
 
@@ -733,9 +732,9 @@ function init() {
 
 	}
 
-	particleGeometry.addAttribute( 'position', new THREE.BufferAttribute( positions, 3 ) );
-	particleGeometry.addAttribute( 'uv', new THREE.BufferAttribute( uvs, 2 ) );
-	particleGeometry.addAttribute( 'id', new THREE.BufferAttribute( ids, 2 ) );
+	particleGeometry.setAttribute( 'position', new THREE.BufferAttribute( positions, 3 ) );
+	particleGeometry.setAttribute( 'uv', new THREE.BufferAttribute( uvs, 2 ) );
+	particleGeometry.setAttribute( 'id', new THREE.BufferAttribute( ids, 2 ) );
 
 	particleMaterial = new THREE.RawShaderMaterial( {
 		uniforms:{
@@ -743,9 +742,9 @@ function init() {
 			useTriangles: { type: 'f', value: 0 },
 			originalTexture: { type: 't', value: texture },
 			infoTexture: { type: 't', value: texture2 },
-			positionTexture: { type: 't', value: positionSim.fbos[ 0 ] },
-			previousPositionTexture: { type: 't', value: positionSim.fbos[ 1 ] },
-			velocityTexture: { type: 't', value: velocitySim.fbos[ 1 ] },
+			positionTexture: { type: 't', value: positionSim.fbos[ 0 ].texture },
+			previousPositionTexture: { type: 't', value: positionSim.fbos[ 1 ].texture },
+			velocityTexture: { type: 't', value: velocitySim.fbos[ 1 ].texture },
 			dimensions: { type: 'v2', value: dimensions },
 			cameraPosition: { type: 'v3', value: new THREE.Vector3() },
 			prevModelViewMatrix: { type: 'm4', value: new THREE.Matrix4() },
@@ -776,26 +775,30 @@ function init() {
 	} );
 
 	rtScene = new THREE.Scene();
-	rtCamera = new THREE.OrthographicCamera( 1 / - 2, 1 / 2, 1 / 2, 1 / - 2, .00001, 1000 );
-	rtQuad = new THREE.Mesh( new THREE.PlaneBufferGeometry( 1, 1 ), rtShader );
+	rtCamera = new THREE.OrthographicCamera( 1 / - 2, 1 / 2, 1 / 2, 1 / - 2, - 1, 1 );
+	rtQuad = new THREE.Mesh( new THREE.PlaneGeometry( 1, 1 ), rtShader );
 	rtScene.add( rtQuad );
 
-	helper.attach( motionRT, 'Motion', function( i ) { return 'Speed: (' + i.r + ', ' + i.g + ')<br/>Life: ' + i.b + ' dLife: ' + i.a } );
+	// the scene as the final pass reads it: per pixel, how the particle there moves on screen and how much life it has left
+	helper.attach( motionRT, 'Motion', {
+		channels: { r: 'screen speed x', g: 'screen speed y', b: 'life left', a: 'opacity' },
+		range: { r: 'auto', g: 'auto', b: [ 0, 1 ] }
+	} );
 
-	var gui = new dat.GUI();
-	gui.add( params, "bounce", 0, 1 ).listen();;
-	gui.add( params, "friction", 0, 1 ).listen();;
-	gui.add( params, "pressure", 0, 1 ).listen();;
-	gui.add( params, "gravity", .1, 1 ).listen();;
-	gui.add( params, "spread", 0, 2 ).listen();;
-	gui.add( params, "size", .1, 2 ).listen();;
-	gui.add( params, "useTriangles" );
-	gui.add( params, "showSpheres" );
-	gui.add( params, "jet" );
-	gui.add( params, "rain" );
-	gui.add( params, "confetti" );
-	gui.add( params, "sand" );
-	gui.add( params, "waterfall" );
+	var gui = new GUI( 'Controls', document.getElementById( 'gui-container' ) );
+	gui.addSlider( 'bounce', params.bounce, 0, 1, .01 );
+	gui.addSlider( 'friction', params.friction, 0, 1, .01 );
+	gui.addSlider( 'pressure', params.pressure, 0, 1, .01 );
+	gui.addSlider( 'gravity', params.gravity, .1, 1, .01 );
+	gui.addSlider( 'spread', params.spread, 0, 2, .01 );
+	gui.addSlider( 'size', params.size, .1, 2, .01 );
+	gui.addCheckbox( 'useTriangles', params.useTriangles );
+	gui.addCheckbox( 'showSpheres', params.showSpheres );
+	Object.keys( presets ).forEach( function( name ) {
+
+		gui.addButton( name, function() { applyPreset( name ); } );
+
+	} );
 
 	window.addEventListener( 'resize', onWindowResized );
 	onWindowResized();
@@ -816,7 +819,6 @@ function onWindowResized( event ) {
 	helper.setSize( w, h );
 
 	motionRT.setSize( w, h );
-	colorRT.setSize( w, h );
 
 	rtCamera.left   = - w / 2;
 	rtCamera.right  =   w / 2;
@@ -840,7 +842,6 @@ function animate() {
 
 }
 
-var tmpVector = new THREE.Vector3();
 var runAnimation = true;
 
 window.addEventListener( 'keydown', function(e ) {
@@ -848,19 +849,19 @@ window.addEventListener( 'keydown', function(e ) {
 } );
 
 var time = 0;
-var lastTime = 0;
+var lastTime = performance.now();
 var tmpVector = new THREE.Vector4();
 
 function render() {
 
-	velocitySim.shader.uniforms.bounce.value = params.bounce;
-	velocitySim.shader.uniforms.friction.value = params.friction;
-	velocitySim.shader.uniforms.gravity.value = params.gravity;
-	velocitySim.shader.uniforms.pressure.value = params.pressure;
-	positionSim.shader.uniforms.spread.value = params.spread;
-	particleMaterial.uniforms.size.value = params.size;
-	particleMaterial.uniforms.useTriangles.value = params.useTriangles ? 1 : 0;
-	sphereObject.visible = params.showSpheres;
+	velocitySim.shader.uniforms.bounce.value = params.bounce();
+	velocitySim.shader.uniforms.friction.value = params.friction();
+	velocitySim.shader.uniforms.gravity.value = params.gravity();
+	velocitySim.shader.uniforms.pressure.value = params.pressure();
+	positionSim.shader.uniforms.spread.value = params.spread();
+	particleMaterial.uniforms.size.value = params.size();
+	particleMaterial.uniforms.useTriangles.value = params.useTriangles() ? 1 : 0;
+	sphereObject.visible = params.showSpheres();
 
 	if( runAnimation ) {
 
@@ -894,21 +895,23 @@ function render() {
 		sphereObject.rotation.z = time;
 		velocitySim.shader.uniforms.sphereRotationMatrix.value.makeRotationZ( time );
 		velocitySim.render();
-		positionSim.shader.uniforms.velocityTexture.value = velocitySim.output;
+		positionSim.shader.uniforms.velocityTexture.value = velocitySim.output.texture;
 		positionSim.render();
-		particleMaterial.uniforms.positionTexture.value = positionSim.output;
-		particleMaterial.uniforms.previousPositionTexture.value = positionSim.input;
-		particleMaterial.uniforms.velocityTexture.value = velocitySim.output;
-		velocitySim.shader.uniforms.positionTexture.value = positionSim.output;
+		particleMaterial.uniforms.positionTexture.value = positionSim.output.texture;
+		particleMaterial.uniforms.previousPositionTexture.value = positionSim.input.texture;
+		particleMaterial.uniforms.velocityTexture.value = velocitySim.output.texture;
+		velocitySim.shader.uniforms.positionTexture.value = positionSim.output.texture;
 
 		world.rotation.y = .1 * time;
 
 	}
 
 	particleMaterial.uniforms.cameraPosition.value.copy( camera.position );
-	renderer.render( scene, camera, motionRT );
+	renderer.setRenderTarget( motionRT );
+	renderer.render( scene, camera );
+	renderer.setRenderTarget( null );
 	rtShader.uniforms.time.value = time;
-	rtShader.uniforms.motionBuffer.value = motionRT;
+	rtShader.uniforms.motionBuffer.value = motionRT.texture;
 	renderer.render( rtScene, rtCamera );
 
 	particleMaterial.uniforms.prevModelViewMatrix.value.multiplyMatrices( camera.matrixWorldInverse, particleSystem.matrixWorld );
